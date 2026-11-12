@@ -1,4 +1,4 @@
-// 화면: 홈, 차시, 따내기 바둑, 연습판, 프로필.
+// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국, 연습판, 용어 사전, 프로필.
 // 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
 
 const root = document.getElementById('app');
@@ -12,18 +12,35 @@ const REASON_TEXT = {
   out: '바둑판 안쪽 교차점을 눌러 주세요.',
 };
 
-const DOL_SVG =
-  '<svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">' +
-  '<circle cx="24" cy="25" r="20" fill="#1d1d1d"/>' +
-  '<ellipse cx="16" cy="14" rx="7" ry="3.6" fill="#fff" opacity=".2" transform="rotate(-28 16 14)"/>' +
-  '<circle cx="17" cy="24" r="3.4" fill="#fff"/><circle cx="31" cy="24" r="3.4" fill="#fff"/>' +
-  '<circle cx="17.8" cy="24.6" r="1.6" fill="#1d1d1d"/><circle cx="31.8" cy="24.6" r="1.6" fill="#1d1d1d"/>' +
-  '<path d="M18 32q6 5 12 0" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>';
+// ---- 그림 (인라인 SVG) ----
+const ICON = {
+  back: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  check: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M6 21V4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M6 5h11l-2.5 3.5L17 12H6z" fill="currentColor"/></svg>',
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"/></svg>',
+};
+
+// 안내 캐릭터 돌돌이 (흰 돌). mood: smile | cheer | oops
+function dolSvg(mood) {
+  const eyes = mood === 'cheer'
+    ? '<path d="M13.5 24q3.2-4.2 6.4 0M28.1 24q3.2-4.2 6.4 0" stroke="#1d1d1d" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
+    : '<circle cx="16.8" cy="23" r="2.7" fill="#1d1d1d"/><circle cx="31.2" cy="23" r="2.7" fill="#1d1d1d"/>';
+  const mouth = mood === 'oops'
+    ? '<ellipse cx="24" cy="32.5" rx="3" ry="3.4" fill="#1d1d1d"/>'
+    : mood === 'cheer'
+      ? '<path d="M17 29.5q7 9 14 0z" fill="#1d1d1d"/>'
+      : '<path d="M18 30.5q6 5 12 0" stroke="#1d1d1d" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  return '<svg viewBox="0 0 48 48" aria-hidden="true"><defs><radialGradient id="dolG" cx="36%" cy="28%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".72" stop-color="#ece7dc"/><stop offset="1" stop-color="#c9c2b3"/></radialGradient></defs>' +
+    '<ellipse cx="24" cy="43.5" rx="13" ry="2.6" fill="rgba(0,0,0,.28)"/><circle cx="24" cy="24" r="20" fill="url(#dolG)"/>' +
+    '<circle cx="11.5" cy="28.5" r="2.6" fill="#f2a79b" opacity=".75"/><circle cx="36.5" cy="28.5" r="2.6" fill="#f2a79b" opacity=".75"/>' + eyes + mouth + '</svg>';
+}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const colorName = (c) => (c === BLACK ? '흑' : '백');
-const starText = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
+const starsHtml = (n, cls) => '<span class="stars ' + (cls || '') + '" role="img" aria-label="별 3개 중 ' + n + '개">' +
+  [1, 2, 3].map((k) => '<i class="' + (k <= n ? 'on' : 'off') + '">' + ICON.star + '</i>').join('') + '</span>';
 
 function safeStorage() {
   try {
@@ -63,22 +80,25 @@ function route() {
   if (open) open.close();
   const h = location.hash || '#/';
   window.scrollTo(0, 0);
-  const m = /^#\/lesson\/(L\d+)$/.exec(h);
+  let m = /^#\/lesson\/(L\d+)$/.exec(h);
   if (m) {
     const lesson = lessonById(m[1]);
     if (lesson && store.current() && isUnlocked(lesson)) return viewLesson(lesson);
     return go('#/');
   }
+  m = /^#\/quiz\/(Q\d+)$/.exec(h);
+  if (m && quizById(m[1])) return viewLesson(quizById(m[1]));
   if (h === '#/capture') return viewCapture();
+  if (h === '#/count') return viewCount();
+  if (h === '#/game') return viewGame();
   if (h === '#/practice') return viewPractice();
+  if (h === '#/terms') return viewTerms();
   return viewHome();
 }
 
 function barHtml(eyebrow, title, right) {
-  return '<header class="bar">' +
-    '<a class="back" href="#/" aria-label="홈으로 돌아가기"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>' +
-    '<div class="bar-title"><span class="eyebrow">' + esc(eyebrow) + '</span><strong>' + esc(title) + '</strong></div>' +
-    (right || '') + '</header>';
+  return '<header class="bar"><a class="back" href="#/" aria-label="홈으로 돌아가기">' + ICON.back + '</a>' +
+    '<div class="bar-title"><span class="eyebrow">' + esc(eyebrow) + '</span><strong>' + esc(title) + '</strong></div>' + (right || '') + '</header>';
 }
 
 function say(text, kind) {
@@ -86,84 +106,168 @@ function say(text, kind) {
   if (!m) return;
   m.textContent = text || '';
   m.className = 'msg' + (kind ? ' ' + kind : '');
+  const dock = $('dock');
+  if (dock) dock.className = 'dock' + (dock.dataset.plain ? ' plain' : '') + (kind ? ' ' + kind : '');
 }
 
+// 판 그림(줄 문자열)을 그대로 그린다. 설명용 작은 판에 쓴다.
+function parsedMarks(p, board) {
+  const marks = [];
+  for (const t of p.targets) if (board[t] !== EMPTY) marks.push({ at: t, shape: 'tri' });
+  for (const d of p.dots) marks.push({ at: d, shape: 'dot' });
+  for (const c of p.crosses) marks.push({ at: c, shape: 'cross' });
+  return marks;
+}
+
+// ---- 계가 도우미 (대국, 연습판, 집 세기 미션이 함께 쓴다) ----
+function scoreTable(result) {
+  const win = result.winner === EMPTY ? '비겼어요.' : colorName(result.winner) + '이 ' + result.margin + '집 이겼어요.';
+  return '<table><thead><tr><th></th><th>집</th><th>따낸 돌</th><th>덤</th><th>합계</th></tr></thead><tbody>' +
+    '<tr><td><span class="chip black small"></span> 흑</td><td>' + result.territory[BLACK] + '</td><td>' + result.captures[BLACK] + '</td><td>-</td><td><b>' + result.black + '</b></td></tr>' +
+    '<tr><td><span class="chip white small"></span> 백</td><td>' + result.territory[WHITE] + '</td><td>' + result.captures[WHITE] + '</td><td>' + result.komi + '</td><td><b>' + result.white + '</b></td></tr>' +
+    '</tbody></table><p class="win">' + win + '</p>';
+}
+
+function toggleDead(dead, state, idx) {
+  if (state.board[idx] === EMPTY) return false;
+  const stones = groupAt(state.board, state.size, idx).stones;
+  const all = stones.every((s) => dead.has(s));
+  for (const s of stones) {
+    if (all) dead.delete(s);
+    else dead.add(s);
+  }
+  return true;
+}
+
+const deadMarks = (dead) => [...dead].map((at) => ({ at, shape: 'cross' }));
+
 // ---------------------------------------------------------------- 홈
+
+const PATH_STEP = 92;
+const PATH_OFFSETS = [0, 40, 56, 40, 0, -40, -56, -40];
+
+function drawPathLines() {
+  document.querySelectorAll('.path').forEach((el) => {
+    const svg = el.querySelector('.path-line');
+    const nodes = [...el.querySelectorAll('.node')];
+    const w = el.clientWidth;
+    if (!svg || w === 0 || nodes.length === 0) return;
+    const pts = nodes.map((n, i) => [w / 2 + PATH_OFFSETS[i % PATH_OFFSETS.length], 32 + i * PATH_STEP]);
+    const d = (upto) => pts.slice(0, upto + 1).map((p, i) => {
+      if (i === 0) return 'M' + p[0] + ' ' + p[1];
+      const q = pts[i - 1];
+      return 'C' + q[0] + ' ' + (q[1] + PATH_STEP / 2) + ' ' + p[0] + ' ' + (p[1] - PATH_STEP / 2) + ' ' + p[0] + ' ' + p[1];
+    }).join('');
+    let reached = -1;
+    nodes.forEach((n, i) => { if (n.classList.contains('done') || n.classList.contains('next')) reached = Math.max(reached, i); });
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', nodes.length * PATH_STEP);
+    svg.innerHTML = '<path class="line-base" d="' + d(pts.length - 1) + '"/>' + (reached > 0 ? '<path class="line-done" d="' + d(reached) + '"/>' : '');
+  });
+}
 
 function viewHome() {
   const me = store.current();
   const next = me ? nextLessonFor() : null;
-  const unit1 = lessonsOfUnit(1);
-  const doneCount = unit1.filter((l) => store.isDone(l.id)).length;
-  const mission = MISSIONS[0];
+  const doneCount = LESSONS.filter((l) => store.isDone(l.id)).length;
+  const starSum = LESSONS.reduce((a, l) => a + store.starsOf(l.id), 0);
+  const missionCount = MISSIONS.filter((m) => store.missionDone(m.id)).length;
+  const openMission = MISSIONS.find((m) => !store.missionDone(m.id) && lessonsOfUnit(m.unit).every((l) => store.isDone(l.id)));
 
   let hero;
   if (!me) {
     hero =
-      '<section class="card welcome">' +
-      '<div class="welcome-head"><span class="dol">' + DOL_SVG + '</span><div><h2>반가워요! 이름을 알려 주세요</h2>' +
-      '<p>이름마다 배운 내용을 따로 기억해요. 이 기기 안에만 저장돼요.</p></div></div>' +
-      '<form id="firstForm" class="name-form"><input id="firstName" maxlength="' + MAX_NAME + '" placeholder="이름 (8글자까지)" autocomplete="off" aria-label="이름">' +
-      '<button class="primary" type="submit">시작하기</button></form><p class="form-err" id="firstErr" role="alert"></p></section>';
+      '<section class="glass hero welcome"><span class="dol">' + dolSvg('smile') + '</span><div class="hero-body"><h2>반가워요. 이름을 알려 주세요</h2>' +
+      '<p>이름마다 배운 내용을 따로 기억해요. 이 기기 안에만 저장돼요.</p>' +
+      '<form id="firstForm" class="name-form"><input id="firstName" maxlength="' + MAX_NAME + '" placeholder="이름" autocomplete="off" aria-label="이름 (8글자까지)">' +
+      '<button class="primary" type="submit">시작하기</button></form><p class="form-err" id="firstErr" role="alert"></p></div></section>';
   } else if (next) {
     const started = doneCount > 0;
     hero =
-      '<section class="card continue"><div><p class="eyebrow">' + (started ? '이어서 하기' : '처음 시작하기') + '</p>' +
-      '<h2>' + next.no + '차시 ' + esc(next.title) + '</h2><p class="goal">' + esc(next.goal) + '</p></div>' +
-      '<a class="primary" href="#/lesson/' + next.id + '">' + (started ? '이어서' : '시작') + '</a></section>';
-  } else {
-    const missionDone = store.missionDone(mission.id);
+      '<section class="glass hero"><span class="dol">' + dolSvg('smile') + '</span><div class="hero-body"><p class="eyebrow">' + (started ? '이어서 하기' : '처음 시작하기') + '</p>' +
+      '<h2>' + next.no + '차시 ' + esc(next.title) + '</h2><p>' + esc(next.goal) + '</p>' +
+      '<a class="primary" href="#/lesson/' + next.id + '">' + (started ? '이어서 하기' : '시작하기') + '</a></div></section>';
+  } else if (openMission) {
     hero =
-      '<section class="card continue"><div><p class="eyebrow">1단원 완료</p><h2>' + (missionDone ? '1단원을 모두 마쳤어요!' : '이제 따내기 바둑을 해 볼까요?') + '</h2>' +
-      '<p class="goal">' + (missionDone ? '2단원은 준비하고 있어요. 그동안 연습판에서 마음껏 두어 보세요.' : esc(mission.text)) + '</p></div>' +
-      '<a class="primary" href="' + (missionDone ? '#/practice' : mission.route) + '">' + (missionDone ? '연습판' : '도전') + '</a></section>';
+      '<section class="glass hero"><span class="dol">' + dolSvg('cheer') + '</span><div class="hero-body"><p class="eyebrow">차시를 모두 마쳤어요</p>' +
+      '<h2>남은 미션: ' + esc(openMission.title) + '</h2><p>' + esc(openMission.text) + '</p>' +
+      '<a class="primary" href="' + openMission.route + '">도전하기</a></div></section>';
+  } else {
+    hero =
+      '<section class="glass hero"><span class="dol">' + dolSvg('cheer') + '</span><div class="hero-body"><p class="eyebrow">수료</p>' +
+      '<h2>24차시와 미션을 모두 마쳤어요</h2><p>이제 9줄 판에서 마음껏 두어 보세요. 익숙해지면 13줄 판에도 도전해 보세요.</p>' +
+      '<a class="primary" href="#/game">한 판 두기</a></div></section>';
   }
 
-  const rows = unit1.map((l) => {
-    const done = store.isDone(l.id);
-    const open = Boolean(me) && isUnlocked(l);
-    const isNext = next && next.id === l.id;
-    const state = done ? 'done' : isNext ? 'next' : open ? 'open' : 'locked';
-    const right = done
-      ? '<span class="stars" aria-label="별 3개 중 ' + store.starsOf(l.id) + '개">' + starText(store.starsOf(l.id)) + '</span>'
-      : isNext ? '<span class="tag go">시작</span>' : '<span class="tag">잠김</span>';
-    const inner = '<span class="num">' + l.no + '</span><span class="lesson-title">' + esc(l.title) + '</span>' + right;
-    return '<li>' + (open
-      ? '<a class="lesson-row ' + state + '" href="#/lesson/' + l.id + '">' + inner + '</a>'
-      : '<span class="lesson-row ' + state + '" aria-disabled="true">' + inner + '</span>') + '</li>';
+  const stats = me
+    ? '<div class="stats"><span class="stat"><b>' + doneCount + '</b> / ' + LESSONS.length + ' 차시</span>' +
+      '<span class="stat gold"><i class="mini-star">' + ICON.star + '</i><b>' + starSum + '</b> 별</span>' +
+      '<span class="stat"><b>' + missionCount + '</b> / ' + MISSIONS.length + ' 미션</span></div>'
+    : '';
+
+  const unitHtml = UNITS.map((u) => {
+    const lessons = lessonsOfUnit(u.id);
+    const mission = missionOfUnit(u.id);
+    const done = lessons.filter((l) => store.isDone(l.id)).length;
+    const hasNext = next ? next.unit === u.id : false;
+    const isOpen = hasNext || (!next && openMission && openMission.unit === u.id) || (!me && u.id === 1);
+    const nodes = lessons.map((l, i) => {
+      const isDone = store.isDone(l.id);
+      const open = Boolean(me) && isUnlocked(l);
+      const isNext = next && next.id === l.id;
+      const cls = isDone ? 'done' : isNext ? 'next' : 'locked';
+      const off = PATH_OFFSETS[i % PATH_OFFSETS.length];
+      const label = '<span class="node-label ' + (off > 0 ? 'left' : 'right') + '"><strong>' + esc(l.title) + '</strong>' +
+        (isDone ? starsHtml(store.starsOf(l.id)) : isNext ? '<em class="tag go">시작</em>' : '<em class="tag">잠김</em>') + '</span>';
+      const dot = '<span class="node-dot">' + (isDone || isNext ? l.no : ICON.lock) + '</span>';
+      const style = ' style="--i:' + i + ';--off:' + off + 'px"';
+      const name = l.no + '차시 ' + l.title + (isDone ? ', 완료' : isNext ? ', 지금 할 차례' : ', 잠김');
+      return open
+        ? '<a class="node ' + cls + '" href="#/lesson/' + l.id + '"' + style + ' aria-label="' + esc(name) + '">' + dot + label + '</a>'
+        : '<span class="node ' + cls + '"' + style + ' aria-label="' + esc(name) + '">' + dot + label + '</span>';
+    });
+    const mi = lessons.length;
+    const mOff = PATH_OFFSETS[mi % PATH_OFFSETS.length];
+    const mDone = store.missionDone(mission.id);
+    nodes.push(
+      '<a class="node mission ' + (mDone ? 'done' : '') + '" href="' + mission.route + '" style="--i:' + mi + ';--off:' + mOff + 'px" aria-label="미션 ' + esc(mission.title) + (mDone ? ', 완료' : '') + '">' +
+      '<span class="node-dot">' + (mDone ? ICON.check : ICON.flag) + '</span>' +
+      '<span class="node-label ' + (mOff > 0 ? 'left' : 'right') + '"><strong>' + esc(mission.title) + '</strong><em class="tag ' + (mDone ? 'ok' : 'gold') + '">' + (mDone ? '완료' : '미션') + '</em></span></a>'
+    );
+    return '<details class="unit"' + (isOpen ? ' open' : '') + '><summary><span class="unit-no">' + u.id + '단원</span>' +
+      '<span class="unit-title"><strong>' + esc(u.title) + '</strong><small>' + esc(u.topics) + '</small></span>' +
+      '<span class="unit-progress">' + done + ' / ' + lessons.length + '</span></summary>' +
+      '<div class="path" style="height:' + nodes.length * PATH_STEP + 'px"><svg class="path-line" aria-hidden="true"></svg>' + nodes.join('') + '</div></details>';
   }).join('');
-
-  const missionRow =
-    '<a class="lesson-row mission' + (store.missionDone(mission.id) ? ' done' : '') + '" href="' + mission.route + '">' +
-    '<span class="num flag">미션</span><span class="lesson-title">' + esc(mission.title) + '<small>' + esc(mission.text) + '</small></span>' +
-    (store.missionDone(mission.id) ? '<span class="tag ok">완료</span>' : '<span class="tag go">도전</span>') + '</a>';
-
-  const soon = UNITS.filter((u) => !u.ready).map((u) =>
-    '<li class="soon-row"><span class="num">' + u.id + '</span><span class="lesson-title">' + esc(u.title) + '<small>' + esc(u.topics) + '</small></span><span class="tag">준비 중</span></li>'
-  ).join('');
 
   const chip = me
     ? '<button type="button" class="profile-chip" id="profileBtn" aria-label="프로필 바꾸기"><span class="avatar c' + me.color + '">' + esc([...me.name][0]) + '</span><span>' + esc(me.name) + '</span></button>'
     : '';
 
   root.innerHTML =
-    '<header class="top"><div><h1>바둑 첫걸음</h1><p class="sub">처음 배우는 바둑</p></div>' + chip + '</header>' +
-    hero +
-    '<section class="unit"><div class="unit-head"><h2>1단원 ' + esc(UNITS[0].title) + '</h2><span class="unit-progress">' + doneCount + ' / ' + unit1.length + '</span></div>' +
-    '<ol class="lessons">' + rows + '<li>' + missionRow + '</li></ol></section>' +
-    '<section class="unit"><div class="unit-head"><h2>다음 단원</h2></div><ol class="lessons">' + soon + '</ol></section>' +
-    '<section class="unit"><div class="unit-head"><h2>자유롭게 두기</h2></div><div class="play-grid">' +
-    '<a class="play-card" href="#/practice"><strong>연습판</strong><span>9줄, 13줄, 19줄 판에서 마음껏 두어 보기</span></a>' +
-    '<a class="play-card" href="#/capture"><strong>따내기 바둑</strong><span>돌돌이와, 또는 둘이서 한 판</span></a></div></section>' +
-    '<footer>v0.2 · 1단원 · 인터넷 없이도 열려요</footer>' +
+    '<header class="top"><div><h1>바둑 첫걸음</h1><p class="sub">처음 배우는 바둑, 한 걸음씩</p></div>' + chip + '</header>' +
+    hero + stats +
+    '<h2 class="section-title">학습 지도</h2>' + unitHtml +
+    '<h2 class="section-title">자유롭게 두기</h2><div class="play-grid">' +
+    '<a class="glass play-card" href="#/game"><strong>9줄 대국</strong><span>돌돌이와, 또는 둘이서 한 판 두고 집 세기</span></a>' +
+    '<a class="glass play-card" href="#/capture"><strong>따내기 바둑</strong><span>먼저 한 점 따내면 이기는 짧은 놀이</span></a>' +
+    '<a class="glass play-card" href="#/practice"><strong>연습판</strong><span>9줄, 13줄, 19줄 판에서 마음껏 두기</span></a>' +
+    '<a class="glass play-card" href="#/terms"><strong>용어 사전</strong><span>배운 바둑 말을 그림으로 다시 보기</span></a></div>' +
+    '<footer>v1.0 · 24차시 · 인터넷 없이도 열려요</footer>' +
     '<dialog id="profileDialog" aria-label="프로필"></dialog>';
+
+  drawPathLines();
+  const onResize = () => drawPathLines();
+  window.addEventListener('resize', onResize);
+  leaveView = () => window.removeEventListener('resize', onResize);
+  document.querySelectorAll('details.unit').forEach((d) => d.addEventListener('toggle', drawPathLines));
 
   if (!me) {
     $('firstForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const r = store.addProfile($('firstName').value);
       if (r.error) $('firstErr').textContent = r.error === 'empty' ? '이름을 한 글자 이상 적어 주세요.' : '그 이름은 쓸 수 없어요.';
-      else viewHome();
+      else route();
     });
   } else {
     $('profileBtn').addEventListener('click', openProfiles);
@@ -175,13 +279,12 @@ function openProfiles() {
   const draw = (err) => {
     const list = store.profiles();
     const me = store.current();
-    const total = LESSONS.length;
     dialog.innerHTML =
-      '<div class="dialog-head"><h2>누가 배울까요?</h2><button type="button" class="icon-btn" id="closeProfiles" aria-label="닫기">닫기</button></div>' +
+      '<div class="dialog-head"><h2>누가 배울까요?</h2><button type="button" class="text-btn" id="closeProfiles">닫기</button></div>' +
       '<ul class="profile-list">' + list.map((p) =>
         '<li class="' + (me && me.id === p.id ? 'on' : '') + '"><button type="button" class="pick" data-id="' + p.id + '">' +
         '<span class="avatar c' + p.color + '">' + esc([...p.name][0]) + '</span><span class="pname">' + esc(p.name) +
-        '<small>' + Object.keys(p.done).length + ' / ' + total + '차시</small></span></button>' +
+        '<small>' + Object.keys(p.done).length + ' / ' + LESSONS.length + '차시</small></span></button>' +
         '<button type="button" class="del" data-del="' + p.id + '" aria-label="' + esc(p.name) + ' 지우기">지우기</button></li>'
       ).join('') + '</ul>' +
       (list.length < MAX_PROFILES
@@ -193,7 +296,7 @@ function openProfiles() {
     dialog.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
       store.selectProfile(b.dataset.id);
       dialog.close();
-      viewHome();
+      route();
     }));
     dialog.querySelectorAll('.del').forEach((b) => b.addEventListener('click', () => {
       const p = store.profiles().find((x) => x.id === b.dataset.del);
@@ -201,7 +304,7 @@ function openProfiles() {
       store.removeProfile(p.id);
       if (!store.current()) {
         dialog.close();
-        viewHome();
+        route();
       } else draw();
     }));
     const form = $('addForm');
@@ -212,7 +315,7 @@ function openProfiles() {
         draw(r.error === 'empty' ? '이름을 한 글자 이상 적어 주세요.' : r.error === 'duplicate' ? '같은 이름이 이미 있어요.' : '더 만들 수 없어요.');
       } else {
         dialog.close();
-        viewHome();
+        route();
       }
     });
   };
@@ -220,24 +323,27 @@ function openProfiles() {
   dialog.showModal();
 }
 
-// ---------------------------------------------------------------- 차시
+// ---------------------------------------------------------------- 차시와 문제 묶음
 
 function viewLesson(lesson) {
   const total = lesson.steps.length;
+  const eyebrow = lesson.quiz ? lesson.unit + '단원 미션' : lesson.no + '차시';
   let i = 0;
   let mistakes = 0;
   let hints = 0;
   let S = null; // 지금 걸음의 진행 상태
+  let timer = null;
+  leaveView = () => { if (timer) clearTimeout(timer); timer = null; };
 
   root.innerHTML =
     '<div class="lesson-view">' +
-    barHtml(lesson.no + '차시', lesson.title, '<span class="count" id="stepCount"></span>') +
-    '<div class="progress" role="progressbar" aria-label="차시 진행" aria-valuemin="0" aria-valuemax="' + total + '" id="progress"><i id="progressFill"></i></div>' +
-    '<div class="boardwrap" id="wrap"><svg id="board" role="img" aria-label="바둑판"></svg></div>' +
-    '<div class="bubble"><span class="dol">' + DOL_SVG + '</span><p id="stepText" tabindex="-1"></p></div>' +
+    barHtml(eyebrow, lesson.title, '<span class="count" id="stepCount"></span>') +
+    '<div class="segs" id="segs" role="progressbar" aria-label="진행" aria-valuemin="0" aria-valuemax="' + total + '">' + '<i></i>'.repeat(total) + '</div>' +
+    '<div class="boardwrap" id="wrap"><svg class="board" id="board" role="img" aria-label="바둑판"></svg></div>' +
+    '<div class="bubble"><span class="dol" id="dol">' + dolSvg('smile') + '</span><p id="stepText" tabindex="-1"></p></div>' +
     '<div class="choices" id="choices"></div>' +
-    '<p class="msg" id="msg" role="status" aria-live="polite"></p>' +
-    '<div class="actions"><button type="button" id="hintBtn" class="ghost-btn">힌트</button><button type="button" id="nextBtn" class="primary">다음</button></div>' +
+    '<div class="dock" id="dock"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
+    '<div class="actions"><button type="button" id="hintBtn" class="ghost-btn">힌트</button><button type="button" id="nextBtn" class="primary">다음</button></div></div>' +
     '</div>';
 
   const view = createBoardView($('board'), onTap);
@@ -248,23 +354,29 @@ function viewLesson(lesson) {
     const p = S.parsed;
     $('wrap').hidden = !p;
     if (!p) return;
-    const marks = [];
-    for (const t of p.targets) if (S.state.board[t] !== EMPTY) marks.push({ at: t, shape: 'tri' });
-    for (const d of p.dots) marks.push({ at: d, shape: 'dot' });
-    for (const c of p.crosses) marks.push({ at: c, shape: 'cross' });
+    const type = S.step.type;
+    const canPlace = !S.done && !S.busy && ['move', 'free', 'forbidden', 'sequence', 'chase'].includes(type);
     view.draw({
       state: S.state,
       libs: S.libs,
-      marks: marks.concat(S.marks),
+      owner: S.owner,
+      marks: parsedMarks(p, S.state.board).concat(S.marks),
       labels: p.labels,
       showLast: S.showLast,
-      ghost: !S.done && (S.step.type === 'move' || S.step.type === 'free'),
+      ghost: canPlace,
     });
+  }
+
+  function mood(kind) {
+    $('dol').innerHTML = dolSvg(kind);
+    $('dol').className = 'dol ' + kind;
   }
 
   function complete(text) {
     S.done = true;
-    say(text || '잘했어요!', 'ok');
+    S.busy = false;
+    say(text || '잘했어요.', 'ok');
+    mood('cheer');
     $('nextBtn').disabled = false;
     $('hintBtn').hidden = true;
     draw();
@@ -273,6 +385,17 @@ function viewLesson(lesson) {
   function miss(text) {
     mistakes++;
     say(text || '아쉬워요. 다시 해 볼까요?', 'warn');
+    mood('oops');
+  }
+
+  // 지금 두어야 할 자리를 동그라미로 알려 주는 걸음
+  function guideMarks() {
+    const type = S.step.type;
+    if (S.done) return [];
+    if (type === 'forbidden') return S.spots.filter((at) => at !== S.parsed.ko).map((at) => ({ at, shape: 'ring' }));
+    if (type === 'sequence' && !S.busy) return [{ at: S.line[S.pos], shape: 'ring' }];
+    if (type === 'choice' && S.parsed) return S.parsed.answers.map((at) => ({ at, shape: 'ring' }));
+    return [];
   }
 
   function startStep() {
@@ -282,29 +405,37 @@ function viewLesson(lesson) {
       step, parsed,
       state: parsed ? parsed.state : null,
       done: step.type === 'explain',
+      busy: false,
       hintLevel: 0,
       libs: [],
+      owner: null,
       marks: [],
       showLast: false,
       placed: 0,
       seen: new Set(),
       found: new Set(),
       groups: step.type === 'point' ? pointTargets(step, parsed) : null,
+      spots: step.type === 'forbidden' ? parsed.answers.concat(parsed.ko >= 0 ? [parsed.ko] : []) : null,
+      line: step.type === 'sequence' ? sequenceLine(step, parsed) : null,
+      pos: 0,
+      target: step.type === 'chase' ? foeTarget(parsed) : -1,
     };
+    S.marks = guideMarks();
     $('stepCount').textContent = (i + 1) + ' / ' + total;
-    $('progressFill').style.width = (i / total) * 100 + '%';
-    $('progress').setAttribute('aria-valuenow', String(i));
+    $('segs').setAttribute('aria-valuenow', String(i));
+    [...$('segs').children].forEach((seg, k) => { seg.className = k < i ? 'done' : k === i ? 'now' : ''; });
     $('stepText').textContent = step.text;
     $('nextBtn').disabled = !S.done;
     $('nextBtn').textContent = i === total - 1 ? '마치기' : '다음';
-    $('hintBtn').hidden = !(['move', 'count', 'point'].includes(step.type) || (step.type === 'choice' && step.hint));
+    $('hintBtn').hidden = !(['move', 'count', 'point', 'chase'].includes(step.type) || (step.type === 'choice' && step.hint));
     say('');
+    mood('smile');
 
     const box = $('choices');
     box.textContent = '';
     box.hidden = !(step.type === 'count' || step.type === 'choice');
     if (!box.hidden) {
-      box.className = 'choices' + (step.type === 'count' ? ' numbers' : '');
+      box.className = 'choices' + (step.type === 'count' || step.choices.every((c) => String(c).length <= 4) ? ' numbers n' + step.choices.length : '');
       step.choices.forEach((c, n) => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -322,13 +453,27 @@ function viewLesson(lesson) {
     if (correct) {
       button.classList.add('correct');
       $('choices').querySelectorAll('button').forEach((b) => { b.disabled = true; });
-      if (S.step.type === 'count') S.libs = groupAt(S.state.board, S.parsed.size, S.parsed.targets[0]).liberties;
+      if (S.step.check === 'liberties') S.libs = groupAt(S.state.board, S.parsed.size, S.parsed.targets[0]).liberties;
+      if (S.step.check === 'territory' || S.step.check === 'owner') S.owner = score(S.state).owner;
+      S.marks = [];
       complete(S.step.right);
     } else {
       button.classList.add('wrong');
       button.disabled = true;
-      miss(S.step.wrong || (S.step.type === 'count' ? '다시 세어 볼까요? 힌트를 누르면 활로를 보여 줘요.' : '다시 생각해 볼까요?'));
+      miss(S.step.wrong || (S.step.check === 'liberties' ? '다시 세어 볼까요? 힌트를 누르면 활로를 보여 줘요.' : '다시 생각해 볼까요?'));
     }
+  }
+
+  // 상대가 받는 수를 조금 뒤에 둔다
+  function later(fn) {
+    S.busy = true;
+    S.marks = [];
+    draw();
+    timer = setTimeout(() => {
+      timer = null;
+      S.busy = false;
+      fn();
+    }, 520);
   }
 
   function onTap(idx) {
@@ -347,7 +492,7 @@ function viewLesson(lesson) {
       draw();
       return;
     }
-    if (S.done) return;
+    if (S.done || S.busy) return;
 
     if (step.type === 'free') {
       const r = play(state, idx);
@@ -379,6 +524,61 @@ function viewLesson(lesson) {
       return;
     }
 
+    if (step.type === 'forbidden') {
+      if (!S.spots.includes(idx)) return say('표시한 자리에 두어 보세요.');
+      const r = play(state, idx);
+      if (!r.ok) {
+        S.marks = [{ at: idx, shape: 'miss' }];
+        complete(step.right);
+      }
+      return;
+    }
+
+    if (step.type === 'sequence') {
+      if (idx !== S.line[S.pos]) return say('동그라미 자리에 두어 보세요.');
+      S.state = play(state, idx).state;
+      S.showLast = true;
+      S.pos++;
+      if (S.pos >= S.line.length) {
+        S.marks = [];
+        return complete(step.right);
+      }
+      say('상대가 받는 수를 기다려요.');
+      later(() => {
+        S.state = play(S.state, S.line[S.pos]).state;
+        S.pos++;
+        S.marks = guideMarks();
+        say('이제 다음 동그라미 자리에 두어 보세요.');
+        draw();
+      });
+      return;
+    }
+
+    if (step.type === 'chase') {
+      if (state.board[idx] !== EMPTY) return say('빈 자리를 눌러 주세요.');
+      const r = play(state, idx);
+      if (!r.ok) return say(REASON_TEXT[r.reason], 'warn');
+      if (!chaseMoveWins(state, S.target, idx)) {
+        S.marks = [{ at: idx, shape: 'miss' }];
+        miss(step.wrong);
+        draw();
+        return;
+      }
+      S.state = r.state;
+      S.showLast = true;
+      S.marks = [];
+      if (S.state.board[S.target] === EMPTY) return complete(step.right);
+      say('좋아요. 상대가 어떻게 받는지 볼까요?', 'ok');
+      later(() => {
+        const reply = chaseReply(S.state, S.target);
+        if (reply >= 0) S.state = play(S.state, reply).state;
+        else S.state = pass(S.state);
+        say(reply >= 0 ? '상대가 받았어요. 계속 몰아 보세요.' : '상대가 달아날 곳이 없어요. 이제 따내 보세요.');
+        draw();
+      });
+      return;
+    }
+
     if (step.type === 'point') {
       const gi = S.groups.findIndex((g) => g.includes(idx));
       if (gi < 0) {
@@ -394,24 +594,35 @@ function viewLesson(lesson) {
       const left = S.groups.length - S.found.size;
       if (step.need === 'one' || left === 0) complete(step.right);
       else {
-        say('잘 찾았어요! ' + left + '군데 더 있어요.', 'ok');
+        say('잘 찾았어요. ' + left + '군데 더 있어요.', 'ok');
         draw();
       }
     }
   }
 
   function onHint() {
-    if (S.done) return;
+    if (S.done || S.busy) return;
     const step = S.step;
     if (S.hintLevel < 2) hints++;
     S.hintLevel++;
     if (step.type === 'count') {
-      S.libs = groupAt(S.state.board, S.parsed.size, S.parsed.targets[0]).liberties;
-      say('초록 점이 활로예요. 하나씩 세어 보세요.');
+      if (step.check === 'liberties') {
+        S.libs = groupAt(S.state.board, S.parsed.size, S.parsed.targets[0]).liberties;
+        say('초록 점이 활로예요. 하나씩 세어 보세요.');
+      } else if (step.check === 'territory') {
+        S.owner = score(S.state).owner;
+        say('작은 네모가 집이에요. 검은 네모는 흑 집, 흰 네모는 백 집이에요.');
+      } else say(step.wrong || '천천히 하나씩 세어 보세요.');
     } else if (step.type === 'move') {
       if (S.hintLevel === 1 && step.hint) say(step.hint);
       else {
         S.marks = S.parsed.answers.map((at) => ({ at, shape: 'ring' }));
+        say('초록 동그라미 자리에 두어 보세요.');
+      }
+    } else if (step.type === 'chase') {
+      if (S.hintLevel === 1 && step.hint) say(step.hint);
+      else {
+        S.marks = chaseWinningMoves(S.state, S.target).slice(0, 1).map((at) => ({ at, shape: 'ring' }));
         say('초록 동그라미 자리에 두어 보세요.');
       }
     } else if (step.type === 'point') {
@@ -434,27 +645,33 @@ function viewLesson(lesson) {
     if (i >= total) return finish();
     startStep();
     $('stepText').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
   }
 
   function finish() {
     const stars = starsFor(mistakes, hints);
-    store.completeLesson(lesson.id, stars);
-    const idx = LESSONS.indexOf(lesson);
-    const next = LESSONS[idx + 1] && LESSONS[idx + 1].unit === lesson.unit ? LESSONS[idx + 1] : null;
-    const mission = MISSIONS.find((m) => m.unit === lesson.unit);
-    const nextBtn = next
-      ? '<a class="primary" href="#/lesson/' + next.id + '">다음: ' + next.no + '차시 ' + esc(next.title) + '</a>'
-      : mission ? '<a class="primary" href="' + mission.route + '">' + esc(mission.title) + ' 하러 가기</a>' : '';
-    const praise = stars === 3 ? '한 번도 틀리지 않았어요!' : stars === 2 ? '아주 잘했어요!' : '끝까지 해냈어요!';
+    let nextBtn;
+    if (lesson.quiz) {
+      store.completeMission(lesson.id);
+      nextBtn = '<a class="primary" href="#/">학습 지도로</a>';
+    } else {
+      store.completeLesson(lesson.id, stars);
+      const idx = LESSONS.indexOf(lesson);
+      const next = LESSONS[idx + 1] && LESSONS[idx + 1].unit === lesson.unit ? LESSONS[idx + 1] : null;
+      const mission = missionOfUnit(lesson.unit);
+      nextBtn = next
+        ? '<a class="primary" href="#/lesson/' + next.id + '">다음: ' + next.no + '차시 ' + esc(next.title) + '</a>'
+        : '<a class="primary" href="' + mission.route + '">미션: ' + esc(mission.title) + '</a>';
+    }
+    const praise = stars === 3 ? '한 번도 틀리지 않았어요' : stars === 2 ? '아주 잘했어요' : '끝까지 해냈어요';
     root.innerHTML =
-      '<div class="lesson-view">' + barHtml(lesson.no + '차시', lesson.title) +
-      '<div class="progress"><i style="width:100%"></i></div>' +
-      '<section class="card finish"><span class="dol big">' + DOL_SVG + '</span>' +
-      '<div class="stars big" aria-label="별 3개 중 ' + stars + '개">' + starText(stars) + '</div>' +
-      '<h2>' + lesson.no + '차시를 마쳤어요</h2><p class="praise">' + praise + '</p>' +
+      '<div class="lesson-view">' + barHtml(eyebrow, lesson.title) +
+      '<div class="segs">' + '<i class="done"></i>'.repeat(total) + '</div>' +
+      '<section class="glass finish"><span class="dol big cheer">' + dolSvg('cheer') + '</span>' + starsHtml(stars, 'big') +
+      '<h2>' + (lesson.quiz ? '미션을 마쳤어요' : lesson.no + '차시를 마쳤어요') + '</h2><p class="praise">' + praise + '</p>' +
       '<p class="summary">' + esc(lesson.summary) + '</p>' +
-      '<div class="finish-actions">' + nextBtn + '<a class="ghost-btn" href="#/">홈으로</a>' +
-      '<button type="button" class="text-btn" id="again">이 차시 다시 하기</button></div></section></div>';
+      '<div class="finish-actions">' + nextBtn + (lesson.quiz ? '' : '<a class="ghost-btn" href="#/">학습 지도로</a>') +
+      '<button type="button" class="text-btn" id="again">다시 하기</button></div></section></div>';
     $('again').addEventListener('click', () => viewLesson(lesson));
     window.scrollTo(0, 0);
   }
@@ -462,7 +679,7 @@ function viewLesson(lesson) {
   startStep();
 }
 
-// ---------------------------------------------------------------- 따내기 바둑
+// ---------------------------------------------------------------- 따내기 바둑 (1단원 미션)
 
 function viewCapture() {
   const mission = MISSIONS[0];
@@ -475,11 +692,11 @@ function viewCapture() {
   root.innerHTML =
     barHtml('1단원 미션', '따내기 바둑') +
     '<div class="seg" role="group" aria-label="상대 고르기"><button type="button" data-mode="ai" aria-pressed="true">돌돌이와 두기</button><button type="button" data-mode="two" aria-pressed="false">둘이서 두기</button></div>' +
-    '<section class="status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div><span class="rule">한 점이라도 먼저 따내면 이겨요</span></section>' +
-    '<div class="boardwrap"><svg id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
-    '<p class="msg" id="msg" role="status" aria-live="polite"></p>' +
-    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="reset">새 판</button></div>' +
-    '<section class="card result" id="result" hidden></section>';
+    '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div><span class="rule">한 점이라도 먼저 따내면 이겨요</span></section>' +
+    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
+    '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
+    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="reset">새 판</button></div></div>' +
+    '<section class="glass result" id="result" hidden></section>';
 
   const view = createBoardView($('board'), onTap);
   const cur = () => moves[moves.length - 1];
@@ -488,12 +705,7 @@ function viewCapture() {
 
   function draw() {
     const state = cur();
-    view.draw({
-      state,
-      atari: !winner,
-      marks: lastCaptured.map((at) => ({ at, shape: 'ring' })),
-      ghost: !winner && !thinking(),
-    });
+    view.draw({ state, atari: !winner, marks: lastCaptured.map((at) => ({ at, shape: 'ring' })), ghost: !winner && !thinking() });
     $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
     const who = mode === 'ai' ? (state.turn === BLACK ? '내 차례 (흑)' : '돌돌이 차례 (백)') : colorName(state.turn) + ' 차례';
     $('turnText').textContent = winner ? '대국 끝' : who;
@@ -509,14 +721,12 @@ function viewCapture() {
     }
     const iWon = mode === 'two' || winner === BLACK;
     if (iWon && store.current()) store.completeMission(mission.id);
-    const title = mode === 'ai'
-      ? (winner === BLACK ? '이겼어요! 먼저 따냈어요' : '돌돌이가 먼저 따냈어요')
-      : colorName(winner) + '이 먼저 따냈어요';
+    const title = mode === 'ai' ? (winner === BLACK ? '이겼어요. 먼저 따냈어요' : '돌돌이가 먼저 따냈어요') : colorName(winner) + '이 먼저 따냈어요';
     const text = mode === 'ai'
-      ? (winner === BLACK ? '상대 돌의 활로를 모두 막았어요. 미션 완료!' : '내 돌이 단수(빨간 점선)인지 살피면서 다시 도전해 보세요.')
-      : colorName(winner) + ' 승리! 한 판 더 두어 볼까요?';
+      ? (winner === BLACK ? '상대 돌의 활로를 모두 막았어요. 미션을 마쳤어요.' : '내 돌이 단수(빨간 점선)인지 살피면서 다시 도전해 보세요.')
+      : colorName(winner) + ' 승리. 한 판 더 두어 볼까요?';
     box.hidden = false;
-    box.innerHTML = '<h2>' + title + '</h2><p>' + text + '</p><div class="finish-actions"><button type="button" class="primary" id="again">한 판 더</button><a class="ghost-btn" href="#/">홈으로</a></div>';
+    box.innerHTML = '<h2>' + title + '</h2><p>' + text + '</p><div class="finish-actions"><button type="button" class="primary" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>';
     $('again').addEventListener('click', newGame);
     box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
@@ -542,11 +752,9 @@ function viewCapture() {
       const mineInDanger = danger.some((g) => g.color === state.turn);
       const foeInDanger = danger.some((g) => g.color === r.state.turn);
       say(mineInDanger
-        ? '조심해요! ' + (mode === 'ai' ? '내 돌' : colorName(state.turn) + '돌') + '이 단수예요.'
-        : foeInDanger ? '단수! ' + colorName(r.state.turn) + '돌의 활로가 하나 남았어요.' : '', mineInDanger ? 'warn' : '');
-      if (mode === 'ai') {
-        timer = setTimeout(aiMove, 550);
-      }
+        ? '조심해요. ' + (mode === 'ai' ? '내 돌' : colorName(state.turn) + '돌') + '이 단수예요.'
+        : foeInDanger ? '단수. ' + colorName(r.state.turn) + '돌의 활로가 하나 남았어요.' : '', mineInDanger ? 'warn' : '');
+      if (mode === 'ai') timer = setTimeout(aiMove, 550);
     }
     draw();
     showResult();
@@ -564,7 +772,7 @@ function viewCapture() {
       apply(r, state.turn);
       if (!winner) {
         const mine = groupsInAtari(r.state).some((g) => g.color === BLACK);
-        say(mine ? '조심해요! 내 돌이 단수예요. 빨간 점선을 살펴보세요.' : '돌돌이가 두었어요. 내 차례예요.', mine ? 'warn' : '');
+        say(mine ? '조심해요. 내 돌이 단수예요. 빨간 점선을 살펴보세요.' : '돌돌이가 두었어요. 내 차례예요.', mine ? 'warn' : '');
       }
     }
     draw();
@@ -603,12 +811,225 @@ function viewCapture() {
   newGame();
 }
 
+// ---------------------------------------------------------------- 집 세기 (2단원 미션)
+
+function viewCount() {
+  const mission = missionOfUnit(2);
+  const parsed = parseBoard({ rows: COUNT_BOARD.rows, komi: COUNT_BOARD.komi });
+  const state = parsed.state;
+  const expected = new Set(parsed.targets);
+  const dead = new Set();
+  let finished = false;
+  let hinted = false;
+
+  root.innerHTML =
+    barHtml('2단원 미션', '집 세기') +
+    '<div class="bubble"><span class="dol">' + dolSvg('smile') + '</span><p>대국이 끝난 판이에요. 상대 집 안에 갇혀서 살 수 없는 돌(죽은 돌)을 눌러서 골라내 보세요. 다 골랐으면 집 세기를 눌러요.</p></div>' +
+    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="끝난 9줄 판"></svg></div>' +
+    '<section class="glass result" id="result"></section>' +
+    '<div class="dock" id="dock"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
+    '<div class="actions"><button type="button" id="hintBtn" class="ghost-btn">힌트</button><button type="button" id="doneBtn" class="primary">집 세기</button></div></div>';
+
+  const view = createBoardView($('board'), (idx) => {
+    if (finished) return;
+    if (!toggleDead(dead, state, idx)) return say('돌을 눌러 주세요.');
+    hinted = false;
+    draw();
+    say(dead.size ? '가위표가 붙은 돌은 죽은 돌로 세요. 다시 누르면 취소돼요.' : '');
+  });
+
+  function draw() {
+    const result = score(state, [...dead]);
+    const rings = hinted ? [...expected].filter((at) => !dead.has(at)).map((at) => ({ at, shape: 'ring' })) : [];
+    view.draw({ state, owner: result.owner, marks: deadMarks(dead).concat(rings), showLast: false });
+    $('result').innerHTML = '<h2>' + (finished ? '결과' : '지금까지 센 집') + '</h2>' + scoreTable(result) +
+      (finished ? '<div class="finish-actions"><a class="primary" href="#/">학습 지도로</a></div>' : '<p class="note">작은 네모가 집이에요. 죽은 돌을 골라내면 집이 늘어나요.</p>');
+  }
+
+  $('hintBtn').addEventListener('click', () => {
+    hinted = true;
+    draw();
+    say('초록 동그라미가 있는 돌을 살펴보세요. 둘레가 모두 상대 돌이에요.');
+  });
+  $('doneBtn').addEventListener('click', () => {
+    const same = dead.size === expected.size && [...expected].every((at) => dead.has(at));
+    if (!same) {
+      return say(dead.size < expected.size
+        ? '아직 죽은 돌이 남아 있어요. 상대 집 안에 홀로 있는 돌을 찾아보세요.'
+        : '살아 있는 돌을 고른 것 같아요. 집을 둘러싼 돌은 살아 있는 돌이에요.', 'warn');
+    }
+    finished = true;
+    if (store.current()) store.completeMission(mission.id);
+    $('hintBtn').hidden = true;
+    $('doneBtn').hidden = true;
+    draw();
+    say('맞게 세었어요. 죽은 돌은 따낸 돌에 더하고, 그 자리는 집이 돼요.', 'ok');
+    $('result').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  draw();
+}
+
+// ---------------------------------------------------------------- 9줄 대국 (5단원 미션)
+
+function viewGame() {
+  const mission = missionOfUnit(5);
+  let mode = 'ai';
+  let moves = [createGame(9)];
+  let phase = 'play'; // play | score | done
+  let dead = new Set();
+  let timer = null;
+
+  root.innerHTML =
+    barHtml('5단원 미션', '9줄 대국') +
+    '<div class="seg" role="group" aria-label="상대 고르기"><button type="button" data-mode="ai" aria-pressed="true">돌돌이와 두기</button><button type="button" data-mode="two" aria-pressed="false">둘이서 두기</button></div>' +
+    '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
+    '<div class="caps"><span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span><span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span></div></section>' +
+    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
+    '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
+    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="reset">새 판</button></div></div>' +
+    '<section class="glass result" id="result" hidden></section>';
+
+  const view = createBoardView($('board'), onTap);
+  const cur = () => moves[moves.length - 1];
+  const thinking = () => timer !== null;
+  leaveView = () => { if (timer) clearTimeout(timer); timer = null; };
+
+  function draw() {
+    const state = cur();
+    const playing = phase === 'play';
+    const result = playing ? null : score(state, [...dead]);
+    view.draw({
+      state,
+      atari: playing,
+      owner: result ? result.owner : null,
+      marks: playing ? [] : deadMarks(dead),
+      ghost: playing && !thinking(),
+    });
+    $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
+    const who = mode === 'ai' ? (state.turn === BLACK ? '내 차례 (흑)' : '돌돌이 차례 (백)') : colorName(state.turn) + ' 차례';
+    $('turnText').textContent = playing ? who : phase === 'score' ? '집 세는 중' : '대국 끝';
+    $('capB').textContent = state.captures[BLACK];
+    $('capW').textContent = state.captures[WHITE];
+    $('undo').disabled = !playing || moves.length <= 1 || thinking();
+    $('passBtn').disabled = !playing || thinking();
+    document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+
+    const box = $('result');
+    box.hidden = playing;
+    if (!playing) {
+      box.innerHTML = '<h2>' + (phase === 'done' ? '결과' : '집 세기') + '</h2>' + scoreTable(result) +
+        (phase === 'score'
+          ? '<p class="note">가위표가 붙은 돌은 죽은 돌로 골라 본 거예요. 다르면 돌을 눌러서 고쳐요.</p><div class="finish-actions"><button type="button" class="primary" id="confirmScore">이대로 집 세기 끝</button></div>'
+          : '<div class="finish-actions"><button type="button" class="primary" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>');
+      const c = $('confirmScore');
+      if (c) c.addEventListener('click', () => {
+        phase = 'done';
+        if (store.current()) store.completeMission(mission.id);
+        const win = result.winner;
+        say(mode === 'ai'
+          ? (win === BLACK ? '이겼어요. 한 판을 끝까지 두고 집까지 세었어요.' : '아쉽게 졌어요. 그래도 한 판을 끝까지 두고 집까지 세었어요.')
+          : colorName(win) + '이 이겼어요. 한 판을 끝까지 두었어요.', 'ok');
+        draw();
+      });
+      const a = $('again');
+      if (a) a.addEventListener('click', newGame);
+    }
+  }
+
+  function enterScore() {
+    phase = 'score';
+    dead = new Set(suggestDead(cur()));
+    say('두 사람이 연달아 쉬어서 대국이 끝났어요. 이제 집을 세요.', 'ok');
+    draw();
+    $('result').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function afterMove() {
+    if (isOver(cur())) return enterScore();
+    if (mode === 'ai' && cur().turn === WHITE) {
+      timer = setTimeout(aiMove, 550);
+    }
+    draw();
+  }
+
+  function onTap(idx) {
+    const state = cur();
+    if (phase === 'score') {
+      if (toggleDead(dead, state, idx)) draw();
+      return;
+    }
+    if (phase !== 'play' || thinking()) return;
+    if (state.board[idx] !== EMPTY) return say('빈 자리를 눌러 주세요.');
+    const r = play(state, idx);
+    if (!r.ok) return say(REASON_TEXT[r.reason], 'warn');
+    moves.push(r.state);
+    const mine = groupsInAtari(r.state).some((g) => g.color === state.turn);
+    say(r.captured.length ? colorName(state.turn) + '이 ' + r.captured.length + '점을 따냈어요.' : mine ? '조심해요. ' + (mode === 'ai' ? '내 돌' : colorName(state.turn) + '돌') + '이 단수예요.' : '', r.captured.length ? 'ok' : mine ? 'warn' : '');
+    afterMove();
+  }
+
+  function aiMove() {
+    timer = null;
+    const state = cur();
+    const m = chooseGameMove(state, { missCapture: 0.15, missEscape: 0.3 });
+    if (m < 0) {
+      moves.push(pass(state));
+      if (!isOver(cur())) say('돌돌이가 한 수 쉬었어요. 더 둘 곳이 없으면 나도 쉬어요.');
+    } else {
+      const r = play(state, m);
+      moves.push(r.state);
+      const mine = groupsInAtari(r.state).some((g) => g.color === BLACK);
+      say(r.captured.length ? '돌돌이가 ' + r.captured.length + '점을 따냈어요.' : mine ? '조심해요. 내 돌이 단수예요.' : '돌돌이가 두었어요. 내 차례예요.', r.captured.length || mine ? 'warn' : '');
+    }
+    afterMove();
+  }
+
+  function newGame() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    moves = [createGame(9)];
+    phase = 'play';
+    dead = new Set();
+    say(mode === 'ai' ? '내가 흑이에요. 귀부터 차지해 보세요. 백에게는 덤 6집 반이 있어요.' : '흑부터 번갈아 두어요. 백에게는 덤 6집 반이 있어요.');
+    draw();
+  }
+
+  $('undo').addEventListener('click', () => {
+    if (phase !== 'play' || moves.length <= 1 || thinking()) return;
+    moves.pop();
+    if (mode === 'ai') while (moves.length > 1 && cur().turn !== BLACK) moves.pop();
+    say('물렀어요.');
+    draw();
+  });
+  $('passBtn').addEventListener('click', () => {
+    if (phase !== 'play' || thinking()) return;
+    const state = cur();
+    moves.push(pass(state));
+    say(colorName(state.turn) + '이 한 수 쉬었어요.');
+    afterMove();
+  });
+  $('reset').addEventListener('click', () => {
+    if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;
+    newGame();
+  });
+  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.mode === mode) return;
+    if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;
+    mode = b.dataset.mode;
+    newGame();
+  }));
+
+  newGame();
+}
+
 // ---------------------------------------------------------------- 연습판
 
 function viewPractice() {
   let moves = [createGame(9)];
   let shown = null;
   let showAtari = true;
+  let dead = new Set();
 
   try {
     const data = JSON.parse(storage.getItem(PRACTICE_KEY) || 'null');
@@ -624,13 +1045,13 @@ function viewPractice() {
   root.innerHTML =
     barHtml('자유롭게 두기', '연습판',
       '<div class="sizes" role="group" aria-label="판 크기"><button type="button" data-size="9">9줄</button><button type="button" data-size="13">13줄</button><button type="button" data-size="19">19줄</button></div>') +
-    '<section class="status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
+    '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
     '<div class="caps"><span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span><span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span></div></section>' +
-    '<div class="boardwrap"><svg id="board" role="img" aria-label="바둑판"></svg></div>' +
-    '<p class="msg" id="msg" role="status" aria-live="polite">교차점을 눌러 돌을 놓아 보세요. 놓인 돌을 누르면 활로를 보여 줘요.</p>' +
+    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="바둑판"></svg></div>' +
+    '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite">교차점을 눌러 돌을 놓아 보세요. 놓인 돌을 누르면 활로를 보여 줘요.</p>' +
     '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="reset">새 판</button>' +
-    '<label class="toggle"><input type="checkbox" id="atari"> 단수 알려주기</label></div>' +
-    '<section class="card result" id="result" hidden></section>';
+    '<label class="toggle"><input type="checkbox" id="atari"> 단수 알려주기</label></div></div>' +
+    '<section class="glass result" id="result" hidden></section>';
 
   const view = createBoardView($('board'), onTap);
   const cur = () => moves[moves.length - 1];
@@ -638,17 +1059,18 @@ function viewPractice() {
   function draw() {
     const state = cur();
     const over = isOver(state);
-    const result = over ? score(state) : null;
+    const result = over ? score(state, [...dead]) : null;
     view.draw({
       state,
       coords: true,
       atari: showAtari && !over,
       libs: shown ? shown.liberties : [],
       owner: result ? result.owner : null,
+      marks: over ? deadMarks(dead) : [],
       ghost: !over,
     });
     $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
-    $('turnText').textContent = over ? '대국 끝' : colorName(state.turn) + ' 차례';
+    $('turnText').textContent = over ? '집 세는 중' : colorName(state.turn) + ' 차례';
     $('capB').textContent = state.captures[BLACK];
     $('capW').textContent = state.captures[WHITE];
     $('undo').disabled = moves.length <= 1;
@@ -658,13 +1080,8 @@ function viewPractice() {
     const box = $('result');
     box.hidden = !result;
     if (result) {
-      const win = result.winner === EMPTY ? '비겼어요.' : colorName(result.winner) + '이 ' + result.margin + '집 이겼어요.';
-      box.innerHTML =
-        '<h2>집 세어 보기</h2><table><thead><tr><th></th><th>집</th><th>따낸 돌</th><th>덤</th><th>합계</th></tr></thead><tbody>' +
-        '<tr><td>흑</td><td>' + result.territory[BLACK] + '</td><td>' + result.captures[BLACK] + '</td><td>-</td><td><b>' + result.black + '</b></td></tr>' +
-        '<tr><td>백</td><td>' + result.territory[WHITE] + '</td><td>' + result.captures[WHITE] + '</td><td>' + result.komi + '</td><td><b>' + result.white + '</b></td></tr>' +
-        '</tbody></table><p class="win">' + win + '</p>' +
-        '<p class="note">판 위의 돌이 모두 살아 있다고 보고 센 임시 결과예요. 죽은 돌 고르기는 2단원과 함께 넣을 예정이에요.</p>';
+      box.innerHTML = '<h2>집 세어 보기</h2>' + scoreTable(result) +
+        '<p class="note">가위표가 붙은 돌은 죽은 돌로 골라 본 거예요. 다르면 돌을 눌러서 고쳐요.</p>';
     }
     try {
       storage.setItem(PRACTICE_KEY, JSON.stringify({ history: moves.slice(-200), showAtari }));
@@ -675,11 +1092,15 @@ function viewPractice() {
 
   function onTap(idx) {
     const state = cur();
+    if (isOver(state)) {
+      if (toggleDead(dead, state, idx)) draw();
+      return;
+    }
     if (state.board[idx] !== EMPTY) {
       shown = groupAt(state.board, state.size, idx);
       draw();
       const n = shown.liberties.length;
-      return say(colorName(shown.color) + '돌 ' + shown.stones.length + '점, 활로는 ' + n + '개예요.' + (n === 1 ? ' 단수예요!' : ''));
+      return say(colorName(shown.color) + '돌 ' + shown.stones.length + '점, 활로는 ' + n + '개예요.' + (n === 1 ? ' 단수예요.' : ''));
     }
     const r = play(state, idx);
     if (!r.ok) return say(REASON_TEXT[r.reason], 'warn');
@@ -689,16 +1110,17 @@ function viewPractice() {
     const mover = colorName(state.turn);
     const where = toCoord(state.size, idx);
     if (r.captured.length > 0) {
-      say(mover + '이 ' + where + '에 두어 ' + r.captured.length + '점을 따냈어요.' + (r.state.ko >= 0 ? ' 패 모양이에요. 네모 표시 자리는 바로 되따낼 수 없어요.' : ''));
+      say(mover + '이 ' + where + '에 두어 ' + r.captured.length + '점을 따냈어요.' + (r.state.ko >= 0 ? ' 패 모양이에요. 네모 표시 자리는 바로 되따낼 수 없어요.' : ''), 'ok');
     } else {
       const danger = groupsInAtari(r.state).some((g) => g.color === r.state.turn);
-      say(mover + ' ' + where + '.' + (danger ? ' 단수! ' + colorName(r.state.turn) + '돌의 활로가 하나 남았어요.' : ''));
+      say(mover + ' ' + where + '.' + (danger ? ' 단수. ' + colorName(r.state.turn) + '돌의 활로가 하나 남았어요.' : ''));
     }
   }
 
   function newGame(size) {
     moves = [createGame(size)];
     shown = null;
+    dead = new Set();
     draw();
     say(size + '줄 새 판이에요. 흑부터 두어요.');
   }
@@ -712,6 +1134,7 @@ function viewPractice() {
     if (moves.length <= 1) return;
     moves.pop();
     shown = null;
+    dead = new Set();
     draw();
     say('한 수 물렀어요.');
   });
@@ -721,8 +1144,10 @@ function viewPractice() {
     const next = pass(state);
     shown = null;
     moves.push(next);
+    if (isOver(next)) dead = new Set(suggestDead(next));
     draw();
     say(isOver(next) ? '두 사람이 연달아 쉬어서 대국이 끝났어요. 아래에서 집을 세어 볼게요.' : colorName(state.turn) + '이 한 수 쉬었어요. 상대도 쉬면 대국이 끝나요.');
+    if (isOver(next)) $('result').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
   $('reset').addEventListener('click', () => newGame(cur().size));
   document.querySelectorAll('.sizes button').forEach((b) => b.addEventListener('click', () => {
@@ -732,7 +1157,23 @@ function viewPractice() {
     newGame(size);
   }));
 
+  if (isOver(cur())) dead = new Set(suggestDead(cur()));
   draw();
+}
+
+// ---------------------------------------------------------------- 용어 사전
+
+function viewTerms() {
+  root.innerHTML =
+    barHtml('다시 보기', '용어 사전') +
+    '<div class="terms">' + GLOSSARY.map((g, i) =>
+      '<article class="glass term">' + (g.rows ? '<div class="boardwrap mini"><svg class="board" data-term="' + i + '" role="img" aria-label="' + esc(g.term) + ' 그림"></svg></div>' : '') +
+      '<div class="term-body"><h2>' + esc(g.term) + '</h2><p>' + esc(g.text) + '</p></div></article>'
+    ).join('') + '</div>';
+  document.querySelectorAll('svg[data-term]').forEach((svg) => {
+    const p = parseBoard({ rows: GLOSSARY[Number(svg.dataset.term)].rows });
+    createBoardView(svg, null).draw({ state: p.state, marks: parsedMarks(p, p.state.board), showLast: false });
+  });
 }
 
 window.addEventListener('hashchange', route);

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LESSONS, UNITS, MISSIONS, lessonById, lessonsOfUnit } from '../src/lessons.mjs';
+import { LESSONS, UNITS, MISSIONS, QUIZZES, COUNT_BOARD, lessonById, quizById, lessonsOfUnit, missionOfUnit } from '../src/lessons.mjs';
 import { parseBoard, validateStep, movesFor, pointTargets, regionOf, starsFor, sameGroup } from '../src/lesson-engine.mjs';
-import { toCoord, BLACK, WHITE } from '../src/rules.mjs';
+import { toCoord, score, BLACK, WHITE } from '../src/rules.mjs';
 
 test('차시 자료: 번호와 단원이 순서대로이고 빠진 항목이 없다', () => {
   const ids = new Set();
@@ -16,9 +16,20 @@ test('차시 자료: 번호와 단원이 순서대로이고 빠진 항목이 없
     ids.add(l.id);
     assert.equal(lessonById(l.id), l);
   });
-  assert.equal(lessonsOfUnit(1).length, 7);
+  assert.equal(LESSONS.length, 24);
+  assert.deepEqual(UNITS.map((u) => lessonsOfUnit(u.id).length), [7, 4, 4, 6, 3]);
+  // 차시는 단원 순서대로 이어진다
+  for (let i = 1; i < LESSONS.length; i++) assert.ok(LESSONS[i].unit >= LESSONS[i - 1].unit);
   assert.equal(lessonById('없음'), null);
-  for (const m of MISSIONS) assert.ok(UNITS.some((u) => u.id === m.unit));
+  // 단원마다 미션이 하나씩 있다
+  for (const u of UNITS) assert.ok(missionOfUnit(u.id), u.id + '단원 미션');
+  assert.equal(MISSIONS.length, UNITS.length);
+  for (const q of QUIZZES) {
+    assert.equal(quizById(q.id), q);
+    assert.ok(MISSIONS.some((m) => m.id === q.id && m.route === '#/quiz/' + q.id));
+    assert.equal(q.steps.length, 10);
+    assert.ok(q.steps.every((s) => s.type !== 'explain'), q.id + ' 는 문제만 있다');
+  }
 });
 
 test('차시 자료: 설명만 읽고 끝나는 차시가 없다 (직접 해 보는 걸음이 절반 이상)', () => {
@@ -30,7 +41,7 @@ test('차시 자료: 설명만 읽고 끝나는 차시가 없다 (직접 해 보
 });
 
 // 모든 걸음의 정답을 규칙 엔진으로 검산한다. 걸음마다 테스트 하나.
-for (const lesson of LESSONS) {
+for (const lesson of [...LESSONS, ...QUIZZES]) {
   lesson.steps.forEach((step, i) => {
     test('검산 ' + lesson.id + ' ' + lesson.title + ' ' + (i + 1) + '번째 걸음 (' + step.type + ')', () => {
       assert.deepEqual(validateStep(step), []);
@@ -124,4 +135,17 @@ test('별: 실수와 힌트가 없으면 3개, 두 번까지 2개, 그 이상 1�
   assert.equal(starsFor(1, 1), 2);
   assert.equal(starsFor(2, 1), 1);
   assert.equal(starsFor(0, 5), 1);
+});
+
+test('집 세기 미션: 죽은 돌을 들어내면 흑 37집, 백 34집 반', () => {
+  const p = parseBoard({ rows: COUNT_BOARD.rows, komi: COUNT_BOARD.komi });
+  assert.equal(p.targets.length, 2, '죽은 돌은 두 점');
+  const before = score(p.state);
+  assert.ok(before.territory[BLACK] < 36 && before.territory[WHITE] < 27, '죽은 돌을 들어내기 전에는 집이 덜 세어진다');
+  const after = score(p.state, p.targets);
+  assert.equal(after.territory[BLACK], 36);
+  assert.equal(after.territory[WHITE], 27);
+  assert.equal(after.black, 37);
+  assert.equal(after.white, 34.5);
+  assert.equal(after.winner, BLACK);
 });

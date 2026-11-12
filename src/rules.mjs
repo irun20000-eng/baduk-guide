@@ -215,6 +215,44 @@ export function score(state, dead = []) {
   };
 }
 
+// 대국이 끝난 뒤 죽은 돌로 보이는 돌을 골라 준다 (추천일 뿐, 사람이 고칠 수 있다).
+// 기준: 그 덩어리가 닿아 있는 빈 구역마다, 그 구역을 둘러싼 상대 돌이 내 돌의 네 배 이상인 돌.
+// (상대 집 안에 홀로 남은 돌은 고르고, 자기 집을 가진 돌이나 아직 싸우는 돌은 고르지 않는다)
+export function suggestDead(state) {
+  const { size, board } = state;
+  const regionOf = new Array(board.length).fill(-1);
+  const regions = [];
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] !== EMPTY || regionOf[i] >= 0) continue;
+    const id = regions.length;
+    const cells = [i];
+    regionOf[i] = id;
+    for (let k = 0; k < cells.length; k++) {
+      for (const n of neighbors(size, cells[k])) {
+        if (board[n] === EMPTY && regionOf[n] < 0) { regionOf[n] = id; cells.push(n); }
+      }
+    }
+    regions.push({ stones: { 1: 0, 2: 0 } });
+  }
+  const groups = [];
+  const seen = new Set();
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === EMPTY || seen.has(i)) continue;
+    const g = groupAt(board, size, i);
+    for (const s of g.stones) seen.add(s);
+    const touching = [...new Set(g.liberties.map((l) => regionOf[l]))];
+    for (const r of touching) regions[r].stones[g.color] += g.stones.length;
+    groups.push({ g, touching });
+  }
+  const dead = [];
+  for (const { g, touching } of groups) {
+    const foe = opponent(g.color);
+    const weak = touching.length > 0 && touching.every((r) => regions[r].stones[foe] > 0 && regions[r].stones[g.color] * 4 <= regions[r].stones[foe]);
+    if (weak) dead.push(...g.stones);
+  }
+  return dead;
+}
+
 // 화점 자리 (x, y). 9줄, 13줄, 19줄만 있다.
 export function starPoints(size) {
   if (size === 9) return [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]];

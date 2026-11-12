@@ -2,7 +2,7 @@
 //  1) 따낼 수 있으면 따낸다 (가끔 못 본다)
 //  2) 내 돌이 단수면 살린다 (가끔 못 본다)
 //  3) 나머지는 점수를 매겨 고른다: 스스로 단수가 되는 수는 피하고, 상대를 단수 치는 수와 돌 근처를 좋아한다
-import { EMPTY, play, groupAt, groupsInAtari, neighbors, opponent } from './rules.mjs';
+import { EMPTY, play, groupAt, groupsInAtari, neighbors, opponent, score } from './rules.mjs';
 
 export function chooseMove(state, options = {}) {
   const rng = options.rng || Math.random;
@@ -43,9 +43,11 @@ export function chooseMove(state, options = {}) {
     if (saves.length) return pickBest(saves, (c) => groupAt(c.after, size, anchor).liberties.length);
   }
 
-  // 3) 점수 매기기
+  // 3) 점수 매기기 (대국에서는 둘 필요가 없는 자리를 걸러 낸다. 남는 자리가 없으면 쉰다)
+  const rest = cands.filter((c) => (!options.allow || options.allow(c.idx)) && !(options.noSelfAtari && c.libs === 1 && c.captured === 0));
+  if (rest.length === 0) return -1;
   const mid = (size - 1) / 2;
-  return pickBest(cands, (c) => {
+  return pickBest(rest, (c) => {
     const x = c.idx % size;
     const y = (c.idx - x) / size;
     const near = neighbors(size, c.idx);
@@ -59,4 +61,37 @@ export function chooseMove(state, options = {}) {
     v += 0.4 * (1 - (Math.abs(x - mid) + Math.abs(y - mid)) / (2 * mid));
     return v;
   });
+}
+
+// 한 판을 끝까지 두는 대국용. 둘 곳이 없으면 -1(한 수 쉬기)을 돌려준다.
+//  - 내 집 안에는 두지 않는다 (집이 줄어든다)
+//  - 상대 집이 좁으면(8집 이하) 들어가지 않는다. 판이 어느 정도 차면 넓은 상대 집에도 들어가지 않는다
+//  - 스스로 단수가 되는 수는 두지 않는다
+export function chooseGameMove(state, options = {}) {
+  const { size, board } = state;
+  const me = state.turn;
+  const cells = size * size;
+  if (state.moveNumber >= cells * 2) return -1;
+  const owner = score(state).owner;
+  // 빈 구역마다 크기를 센다
+  const regionSize = new Array(cells).fill(0);
+  const seen = new Set();
+  for (let i = 0; i < cells; i++) {
+    if (board[i] !== EMPTY || seen.has(i)) continue;
+    const region = [i];
+    seen.add(i);
+    for (let k = 0; k < region.length; k++) {
+      for (const n of neighbors(size, region[k])) {
+        if (board[n] === EMPTY && !seen.has(n)) { seen.add(n); region.push(n); }
+      }
+    }
+    for (const r of region) regionSize[r] = region.length;
+  }
+  const late = state.moveNumber >= cells * 0.6;
+  const allow = (i) => {
+    if (owner[i] === me) return false;
+    if (owner[i] === opponent(me)) return !late && regionSize[i] > 8;
+    return true;
+  };
+  return chooseMove(state, { ...options, allow, noSelfAtari: true });
 }

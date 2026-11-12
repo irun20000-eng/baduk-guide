@@ -1,26 +1,38 @@
-// 차시 자료. 판 그림 글자는 lesson-engine.mjs 의 parseBoard 설명을 본다.
-//  .  빈 곳   X 흑   O 백   x/o 표시한 돌(문제의 대상)   * 정답 자리   + 활로 표시   ! 아님 표시
+// 차시 자료 묶음. 1단원은 이 파일에, 2~5단원은 src/lessons/ 아래에 있다.
+// 판 그림 글자와 걸음 종류는 lesson-engine.mjs 머리말을 본다.
+//  .  빈 곳   X 흑   O 백   x/o 표시한 돌(문제의 대상)   * 정답 자리   + 활로 표시   ! 아님 표시   # 패 자리
 // 걸음 종류
-//  explain 설명만            free    자유롭게 count 개 놓기      explore 돌을 눌러 활로 보기(need 덩어리)
+//  explain 설명만        free 자유롭게 놓기      explore 돌을 눌러 활로 보기
 //  move    한 수 문제(check 조건으로 정답 자동 검산)
-//  count   수 세기(check: liberties)   choice 고르기   point 짚기(rule 또는 표시, need: one | all)
+//  count   수 세기       choice 고르기           point 짚기(rule 또는 표시, need: one | all)
+//  forbidden 둘 수 없는 자리에 두어 보기          sequence 정해진 수순 따라 두기
+//  chase   단수를 쳐서 끝까지 몰아 잡기(상대가 알아서 받는다)
 // 글은 한 걸음에 세 문장까지. 테스트(tests/lessons.test.mjs)가 모든 정답을 규칙 엔진으로 검산한다.
+import { UNIT2, COUNT_MISSION } from './lessons/unit2.mjs';
+import { UNIT3, QUIZ3 } from './lessons/unit3.mjs';
+import { UNIT4, QUIZ4 } from './lessons/unit4.mjs';
+import { UNIT5 } from './lessons/unit5.mjs';
 
 export const UNITS = [
-  { id: 1, title: '돌과 친해지기', ready: true, topics: '활로, 따내기, 단수, 잇기와 끊기' },
-  { id: 2, title: '꼭 알아야 할 규칙', ready: false, topics: '둘 수 없는 곳, 패, 집, 한 판의 끝' },
-  { id: 3, title: '삶과 죽음', ready: false, topics: '두 집, 옥집, 급소, 빅' },
-  { id: 4, title: '돌 잡는 기술', ready: false, topics: '양단수, 축, 장문, 환격, 촉촉수, 수상전' },
-  { id: 5, title: '한 판 두기', ready: false, topics: '어디부터 둘까, 첫 대국, 예절' },
+  { id: 1, title: '돌과 친해지기', topics: '활로, 따내기, 단수, 잇기와 끊기' },
+  { id: 2, title: '꼭 알아야 할 규칙', topics: '둘 수 없는 곳, 패, 집, 한 판의 끝' },
+  { id: 3, title: '삶과 죽음', topics: '두 집, 옥집, 급소, 빅' },
+  { id: 4, title: '돌 잡는 기술', topics: '양단수, 축, 장문, 환격, 촉촉수, 수상전' },
+  { id: 5, title: '한 판 두기', topics: '어디부터 둘까, 한 판의 흐름, 예절' },
 ];
 
+// 단원 끝 미션. route 는 화면 주소.
 export const MISSIONS = [
   { id: 'capture-go', unit: 1, title: '따내기 바둑', text: '한 점이라도 먼저 따내면 이겨요.', route: '#/capture' },
+  { id: 'count-9', unit: 2, title: '집 세기', text: '끝난 판에서 죽은 돌을 골라내고 집을 세어요.', route: '#/count' },
+  { id: 'Q3', unit: 3, title: '사활 10문제', text: '살리고 잡는 문제를 섞어서 풀어요.', route: '#/quiz/Q3' },
+  { id: 'Q4', unit: 4, title: '기술 10문제', text: '돌 잡는 기술을 섞어서 풀어요.', route: '#/quiz/Q4' },
+  { id: 'first-game', unit: 5, title: '첫 대국', text: '9줄 판에서 한 판을 끝까지 두고 집을 세어요.', route: '#/game' },
 ];
 
 const EMPTY9 = ['.........', '.........', '.........', '.........', '.........', '.........', '.........', '.........', '.........'];
 
-export const LESSONS = [
+const UNIT1 = [
   {
     id: 'L01', unit: 1, no: 1, title: '바둑판과 돌',
     goal: '돌은 줄이 만나는 점에, 흑부터 번갈아 한 수씩 둔다는 것을 안다',
@@ -432,10 +444,22 @@ export const LESSONS = [
   },
 ];
 
+export const LESSONS = [...UNIT1, ...UNIT2, ...UNIT3, ...UNIT4, ...UNIT5];
+export const QUIZZES = [QUIZ3, QUIZ4];
+export const COUNT_BOARD = COUNT_MISSION;
+
 export function lessonById(id) {
   return LESSONS.find((l) => l.id === id) || null;
 }
 
+export function quizById(id) {
+  return QUIZZES.find((q) => q.id === id) || null;
+}
+
 export function lessonsOfUnit(unitId) {
   return LESSONS.filter((l) => l.unit === unitId);
+}
+
+export function missionOfUnit(unitId) {
+  return MISSIONS.find((m) => m.unit === unitId) || null;
 }

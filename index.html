@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e7">
+<title>바둑 첫걸음 (연습판 미리보기)</title>
+<style>
+:root {
+  --bg: #f6f1e7;
+  --card: #fffdf8;
+  --ink: #2a2520;
+  --ink-soft: #6b625a;
+  --line: #e4dccd;
+  --wood: #e2b565;
+  --wood-edge: #c99945;
+  --grid: #5a4424;
+  --accent: #2f6b4f;
+  --warn: #c0392b;
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; }
+.sub { margin: 2px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
+.sizes {
+  display: inline-flex;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.sizes button {
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.sizes button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+.turn { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; }
+.caps { display: flex; gap: 14px; font-size: 0.9rem; color: var(--ink-soft); }
+.caps span { display: inline-flex; align-items: center; gap: 5px; }
+.caps b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.chip {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.chip.small { width: 14px; height: 14px; }
+.chip.black { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 65%); }
+.chip.white { background: radial-gradient(circle at 35% 30%, #fff, #d9d5cc 80%); border: 1px solid #b9b3a6; }
+
+.boardwrap {
+  background: var(--wood);
+  border: 1px solid var(--wood-edge);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 0 var(--wood-edge), 0 10px 24px rgba(70, 50, 20, 0.16);
+  padding: 4px;
+}
+#board {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#board .grid { stroke: var(--grid); stroke-width: 1.2; stroke-linecap: square; }
+#board .star { fill: var(--grid); }
+#board .label { fill: #7a5f31; font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+#board .stone-shadow { fill: rgba(40, 25, 5, 0.28); }
+#board .last { fill: none; stroke-width: 2.2; }
+#board .lib { fill: var(--accent); opacity: 0.85; }
+#board .atari { fill: none; stroke: var(--warn); stroke-width: 2.4; stroke-dasharray: 4 3; }
+#board .ko { fill: none; stroke: var(--warn); stroke-width: 1.8; }
+#board .ghost { opacity: 0.42; pointer-events: none; }
+#board .terr { opacity: 0.8; }
+
+.msg {
+  min-height: 3.1em;
+  margin: 12px 2px 8px;
+  font-size: 0.98rem;
+}
+.msg.warn { color: var(--warn); font-weight: 600; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls button {
+  font: inherit;
+  font-weight: 600;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.controls button:active { transform: translateY(1px); }
+.controls button:disabled { opacity: 0.45; cursor: default; }
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 6px;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.result {
+  margin-top: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.result h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.result table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.result th, .result td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--line); }
+.result th:first-child, .result td:first-child { text-align: left; }
+.result .win { margin: 10px 0 0; font-weight: 700; }
+.result .note { margin: 6px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
+
+.tips { margin-top: 20px; }
+.tips h2 { font-size: 1rem; margin: 0 0 8px; }
+.tips dl { margin: 0; display: grid; gap: 8px; }
+.tips dl > div {
+  display: grid;
+  grid-template-columns: 5.2em 1fr;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.tips dt { font-weight: 700; color: var(--accent); }
+.tips dd { margin: 0; font-size: 0.93rem; }
+
+footer { margin-top: 22px; text-align: center; font-size: 0.8rem; color: var(--ink-soft); }
+
+@media (max-width: 420px) {
+  .status { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .controls button { flex: 1 1 30%; padding: 0 8px; }
+  .toggle { flex: 1 1 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>바둑 첫걸음</h1>
+      <p class="sub">연습판 미리보기</p>
+    </div>
+    <div class="sizes" role="group" aria-label="판 크기">
+      <button type="button" data-size="9" aria-pressed="true">9줄</button>
+      <button type="button" data-size="13" aria-pressed="false">13줄</button>
+      <button type="button" data-size="19" aria-pressed="false">19줄</button>
+    </div>
+  </header>
+
+  <section class="status" aria-label="대국 상황">
+    <div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText">흑 차례</strong></div>
+    <div class="caps">
+      <span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span>
+      <span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span>
+    </div>
+  </section>
+
+  <main>
+    <div class="boardwrap">
+      <svg id="board" role="img" aria-label="바둑판"></svg>
+    </div>
+    <p id="msg" class="msg" role="status" aria-live="polite">교차점을 눌러 돌을 놓아 보세요. 놓인 돌을 누르면 활로를 보여 줘요.</p>
+
+    <div class="controls">
+      <button type="button" id="undo">무르기</button>
+      <button type="button" id="pass">한 수 쉬기</button>
+      <button type="button" id="reset">새 판</button>
+      <label class="toggle"><input type="checkbox" id="atari" checked> 단수 알려주기</label>
+    </div>
+
+    <section id="result" class="result" hidden></section>
+
+    <section class="tips" aria-label="규칙 한눈에">
+      <h2>규칙 한눈에</h2>
+      <dl>
+        <div><dt>활로</dt><dd>돌 바로 옆(위·아래·왼쪽·오른쪽)의 빈 교차점. 돌의 숨구멍이에요.</dd></div>
+        <div><dt>따내기</dt><dd>상대 돌의 활로를 모두 막으면 그 돌을 판에서 들어내요.</dd></div>
+        <div><dt>단수</dt><dd>활로가 하나만 남은 상태. 다음 수에 잡힐 수 있어요.</dd></div>
+        <div><dt>착수금지</dt><dd>놓자마자 활로가 없는 곳에는 둘 수 없어요. 상대 돌을 따낼 수 있으면 괜찮아요.</dd></div>
+        <div><dt>패</dt><dd>한 점을 서로 번갈아 따낼 수 있는 모양. 바로 되따낼 수 없고, 다른 곳에 한 번 둔 뒤에 따낼 수 있어요.</dd></div>
+      </dl>
+    </section>
+  </main>
+
+  <footer>v0.1 뼈대 · 인터넷 없이도 열리는 한 파일 웹앱</footer>
+</div>
+<script>
+(function () {
+'use strict';
+// 바둑 규칙 엔진 (한국 바둑규칙 기준)
+// - 따냄, 착수금지(자충수), 패, 한 수 쉬기, 집 계산
+// - 화면과 무관한 순수 함수만 둔다. 상태는 바꾸지 않고 항상 새 상태를 돌려준다.
+// 근거: 대한바둑협회 한국바둑규칙 제4조(활로·따냄), 제5조(착수금지), 제7조(패), 제8조(집과 공배), 제12조(계가)
+
+const EMPTY = 0;
+const BLACK = 1;
+const WHITE = 2;
+
+const COLUMN_LETTERS = 'ABCDEFGHJKLMNOPQRST'; // 관례대로 I는 쓰지 않는다
+
+function opponent(color) {
+  return color === BLACK ? WHITE : BLACK;
+}
+
+function createGame(size = 9, options = {}) {
+  if (!Number.isInteger(size) || size < 2 || size > 19) {
+    throw new Error('판 크기는 2~19줄이어야 합니다: ' + size);
+  }
+  return {
+    size,
+    board: new Array(size * size).fill(EMPTY),
+    turn: BLACK,
+    captures: { 1: 0, 2: 0 }, // captures[색] = 그 색이 따낸 돌 수
+    ko: -1, // 패 때문에 지금 당장 둘 수 없는 자리 (없으면 -1)
+    passes: 0, // 연속으로 쉰 횟수 (2가 되면 대국 종료)
+    moveNumber: 0,
+    lastMove: -1,
+    komi: options.komi ?? 6.5,
+  };
+}
+
+function neighbors(size, idx) {
+  const x = idx % size;
+  const y = (idx - x) / size;
+  const out = [];
+  if (y > 0) out.push(idx - size);
+  if (x > 0) out.push(idx - 1);
+  if (x < size - 1) out.push(idx + 1);
+  if (y < size - 1) out.push(idx + size);
+  return out;
+}
+
+// idx에 놓인 돌이 속한 덩어리(연결된 같은 색 돌)와 그 활로를 구한다.
+function groupAt(board, size, idx) {
+  const color = board[idx];
+  if (color === EMPTY) return { color: EMPTY, stones: [], liberties: [] };
+  const seen = new Set([idx]);
+  const libs = new Set();
+  const stack = [idx];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const n of neighbors(size, cur)) {
+      const c = board[n];
+      if (c === EMPTY) libs.add(n);
+      else if (c === color && !seen.has(n)) {
+        seen.add(n);
+        stack.push(n);
+      }
+    }
+  }
+  return { color, stones: [...seen], liberties: [...libs] };
+}
+
+// 한 수 두기. 성공하면 { ok: true, state, captured }, 실패하면 { ok: false, reason }.
+// reason: 'ended' | 'out' | 'occupied' | 'ko' | 'suicide'
+function play(state, idx) {
+  const { size, board, turn } = state;
+  if (state.passes >= 2) return { ok: false, reason: 'ended' };
+  if (!Number.isInteger(idx) || idx < 0 || idx >= size * size) return { ok: false, reason: 'out' };
+  if (board[idx] !== EMPTY) return { ok: false, reason: 'occupied' };
+  if (idx === state.ko) return { ok: false, reason: 'ko' };
+
+  const next = board.slice();
+  next[idx] = turn;
+  const foe = opponent(turn);
+
+  // 1) 상대 돌 중 활로가 모두 막힌 덩어리를 먼저 따낸다.
+  const captured = [];
+  for (const n of neighbors(size, idx)) {
+    if (next[n] !== foe) continue;
+    const g = groupAt(next, size, n);
+    if (g.liberties.length === 0) {
+      for (const s of g.stones) {
+        next[s] = EMPTY;
+        captured.push(s);
+      }
+    }
+  }
+
+  // 2) 따낸 돌이 없는데 내 돌의 활로도 없으면 착수금지.
+  const own = groupAt(next, size, idx);
+  if (own.liberties.length === 0) return { ok: false, reason: 'suicide' };
+
+  // 3) 패: 한 점을 따냈고, 방금 둔 돌이 홀로 활로 하나(따낸 자리)만 가진 경우.
+  const ko = captured.length === 1 && own.stones.length === 1 && own.liberties.length === 1 ? captured[0] : -1;
+
+  return {
+    ok: true,
+    captured,
+    state: {
+      ...state,
+      board: next,
+      turn: foe,
+      captures: { ...state.captures, [turn]: state.captures[turn] + captured.length },
+      ko,
+      passes: 0,
+      moveNumber: state.moveNumber + 1,
+      lastMove: idx,
+    },
+  };
+}
+
+// 한 수 쉬기. 두 사람이 연달아 쉬면 대국이 끝난다.
+function pass(state) {
+  if (state.passes >= 2) return state;
+  return {
+    ...state,
+    turn: opponent(state.turn),
+    ko: -1,
+    passes: state.passes + 1,
+    moveNumber: state.moveNumber + 1,
+    lastMove: -1,
+  };
+}
+
+function isOver(state) {
+  return state.passes >= 2;
+}
+
+function isLegal(state, idx) {
+  return play(state, idx).ok;
+}
+
+function legalMoves(state) {
+  const out = [];
+  for (let i = 0; i < state.board.length; i++) {
+    if (state.board[i] === EMPTY && isLegal(state, i)) out.push(i);
+  }
+  return out;
+}
+
+// 활로가 하나만 남은(단수) 덩어리 목록.
+function groupsInAtari(state) {
+  const { board, size } = state;
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === EMPTY || seen.has(i)) continue;
+    const g = groupAt(board, size, i);
+    for (const s of g.stones) seen.add(s);
+    if (g.liberties.length === 1) out.push(g);
+  }
+  return out;
+}
+
+// 집 계산 (한국식: 집 + 따낸 돌, 백에게 덤).
+// dead: 대국이 끝난 뒤 죽은 돌로 합의한 자리들. 판에서 들어내 상대의 따낸 돌에 더한다.
+function score(state, dead = []) {
+  const { size } = state;
+  const board = state.board.slice();
+  const captures = { 1: state.captures[1], 2: state.captures[2] };
+  for (const d of dead) {
+    const c = board[d];
+    if (c === EMPTY) continue;
+    board[d] = EMPTY;
+    captures[opponent(c)] += 1;
+  }
+
+  const owner = new Array(board.length).fill(EMPTY); // 각 빈 점이 누구 집인지 (공배는 EMPTY)
+  const territory = { 1: 0, 2: 0 };
+  const neutral = [];
+  const seen = new Set();
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] !== EMPTY || seen.has(i)) continue;
+    const region = [];
+    const borders = new Set();
+    const stack = [i];
+    seen.add(i);
+    while (stack.length) {
+      const cur = stack.pop();
+      region.push(cur);
+      for (const n of neighbors(size, cur)) {
+        if (board[n] === EMPTY) {
+          if (!seen.has(n)) {
+            seen.add(n);
+            stack.push(n);
+          }
+        } else {
+          borders.add(board[n]);
+        }
+      }
+    }
+    if (borders.size === 1) {
+      const c = [...borders][0];
+      territory[c] += region.length;
+      for (const r of region) owner[r] = c;
+    } else {
+      neutral.push(...region);
+    }
+  }
+
+  const black = territory[1] + captures[1];
+  const white = territory[2] + captures[2] + state.komi;
+  return {
+    territory,
+    captures,
+    komi: state.komi,
+    owner,
+    neutral,
+    black,
+    white,
+    winner: black > white ? BLACK : white > black ? WHITE : EMPTY,
+    margin: Math.abs(black - white),
+  };
+}
+
+// ---- 좌표와 판 표기 ----
+// 좌표: 가로 A~T(I 제외), 세로는 아래에서부터 1. 예: 9줄판 한가운데 = E5
+function toCoord(size, idx) {
+  const x = idx % size;
+  const y = (idx - x) / size;
+  return COLUMN_LETTERS[x] + (size - y);
+}
+
+function fromCoord(size, coord) {
+  const m = /^([A-HJ-T])(\d{1,2})$/i.exec(String(coord).trim());
+  if (!m) return -1;
+  const x = COLUMN_LETTERS.indexOf(m[1].toUpperCase());
+  const row = Number(m[2]);
+  if (x < 0 || x >= size || row < 1 || row > size) return -1;
+  return (size - row) * size + x;
+}
+
+// 줄 문자열 배열로 판을 만든다. 첫 줄이 맨 윗줄. '.' 빈 곳, 'X' 흑, 'O' 백. 공백은 무시.
+function gameFromRows(rows, options = {}) {
+  const clean = rows.map((r) => r.replace(/\s+/g, ''));
+  const size = clean.length;
+  const state = createGame(size, options);
+  clean.forEach((row, y) => {
+    if (row.length !== size) throw new Error('줄 길이가 판 크기와 다릅니다: ' + row);
+    [...row].forEach((ch, x) => {
+      state.board[y * size + x] = ch === 'X' ? BLACK : ch === 'O' ? WHITE : EMPTY;
+    });
+  });
+  if (options.turn) state.turn = options.turn;
+  return state;
+}
+
+function toRows(state) {
+  const rows = [];
+  for (let y = 0; y < state.size; y++) {
+    let row = '';
+    for (let x = 0; x < state.size; x++) {
+      const c = state.board[y * state.size + x];
+      row += c === BLACK ? 'X' : c === WHITE ? 'O' : '.';
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+// 연습판 화면. 규칙은 모두 rules.mjs의 함수를 쓴다 (빌드 때 같은 스크립트 안에 합쳐진다).
+// 여기서는 그리기, 입력, 안내 문구, 저장만 맡는다.
+
+const CELL = 40;
+const MARGIN = 34;
+const STORAGE_KEY = 'baduk-guide:v1:practice';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const REASON_TEXT = {
+  occupied: '이미 돌이 있는 자리예요.',
+  suicide: '여기는 착수금지예요. 놓자마자 활로가 하나도 없어요.',
+  ko: '패예요. 바로 되따낼 수 없어요. 다른 곳에 한 번 둔 뒤에 따낼 수 있어요.',
+  ended: '대국이 끝났어요. 새 판을 눌러 다시 시작해 보세요.',
+  out: '바둑판 안쪽 교차점을 눌러 주세요.',
+};
+
+const $ = (id) => document.getElementById(id);
+const svg = $('board');
+const colorName = (c) => (c === BLACK ? '흑' : '백');
+
+let history = [createGame(9)];
+let shown = null; // 활로를 보여 주고 있는 덩어리 { stones, liberties }
+let showAtari = true;
+
+const current = () => history[history.length - 1];
+
+function starPoints(size) {
+  if (size === 9) return [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]];
+  if (size === 13) return [[3, 3], [9, 3], [6, 6], [3, 9], [9, 9]];
+  if (size === 19) {
+    const out = [];
+    for (const y of [3, 9, 15]) for (const x of [3, 9, 15]) out.push([x, y]);
+    return out;
+  }
+  return [];
+}
+
+const px = (n) => MARGIN + n * CELL;
+
+function el(name, attrs) {
+  const node = document.createElementNS(SVG_NS, name);
+  for (const k in attrs) node.setAttribute(k, attrs[k]);
+  return node;
+}
+
+function drawStone(parent, x, y, color, extraClass) {
+  const g = el('g', extraClass ? { class: extraClass } : {});
+  g.appendChild(el('circle', { class: 'stone-shadow', cx: px(x) + 1.2, cy: px(y) + 2, r: CELL * 0.47 }));
+  g.appendChild(el('circle', {
+    cx: px(x), cy: px(y), r: CELL * 0.47,
+    fill: color === BLACK ? 'url(#gB)' : 'url(#gW)',
+    stroke: color === BLACK ? '#000' : '#b3ad9f',
+    'stroke-width': 0.8,
+  }));
+  parent.appendChild(g);
+  return g;
+}
+
+function render() {
+  const state = current();
+  const size = state.size;
+  const extent = MARGIN * 2 + (size - 1) * CELL;
+  svg.setAttribute('viewBox', '0 0 ' + extent + ' ' + extent);
+  svg.textContent = '';
+
+  const defs = el('defs', {});
+  defs.innerHTML =
+    '<radialGradient id="gB" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#707070"/><stop offset="0.6" stop-color="#1b1b1b"/><stop offset="1" stop-color="#050505"/></radialGradient>' +
+    '<radialGradient id="gW" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.75" stop-color="#ece8df"/><stop offset="1" stop-color="#cfc9bc"/></radialGradient>';
+  svg.appendChild(defs);
+
+  // 줄과 화점
+  for (let i = 0; i < size; i++) {
+    svg.appendChild(el('line', { class: 'grid', x1: px(0), y1: px(i), x2: px(size - 1), y2: px(i) }));
+    svg.appendChild(el('line', { class: 'grid', x1: px(i), y1: px(0), x2: px(i), y2: px(size - 1) }));
+  }
+  for (const [x, y] of starPoints(size)) {
+    svg.appendChild(el('circle', { class: 'star', cx: px(x), cy: px(y), r: 3.4 }));
+  }
+
+  // 좌표 (가로 A~, 세로는 아래에서부터 1)
+  for (let i = 0; i < size; i++) {
+    const col = el('text', { class: 'label', x: px(i), y: extent - 11 });
+    col.textContent = toCoord(size, i)[0];
+    svg.appendChild(col);
+    const row = el('text', { class: 'label', x: 11, y: px(i) });
+    row.textContent = String(size - i);
+    svg.appendChild(row);
+  }
+
+  // 대국이 끝났으면 집 표시
+  const over = isOver(state);
+  const result = over ? score(state) : null;
+  if (result) {
+    result.owner.forEach((c, idx) => {
+      if (c === EMPTY) return;
+      const x = idx % size;
+      const y = (idx - x) / size;
+      svg.appendChild(el('rect', {
+        class: 'terr', x: px(x) - 6, y: px(y) - 6, width: 12, height: 12, rx: 2,
+        fill: c === BLACK ? '#1b1b1b' : '#fffdf5', stroke: c === BLACK ? 'none' : '#a59e8e',
+      }));
+    });
+  }
+
+  // 돌
+  state.board.forEach((c, idx) => {
+    if (c === EMPTY) return;
+    const x = idx % size;
+    drawStone(svg, x, (idx - x) / size, c);
+  });
+
+  // 마지막 수
+  if (state.lastMove >= 0) {
+    const x = state.lastMove % size;
+    const y = (state.lastMove - x) / size;
+    const c = state.board[state.lastMove];
+    svg.appendChild(el('circle', { class: 'last', cx: px(x), cy: px(y), r: CELL * 0.2, stroke: c === BLACK ? '#fff' : '#222' }));
+  }
+
+  // 단수 표시
+  if (showAtari && !over) {
+    for (const g of groupsInAtari(state)) {
+      for (const s of g.stones) {
+        const x = s % size;
+        svg.appendChild(el('circle', { class: 'atari', cx: px(x), cy: px((s - x) / size), r: CELL * 0.47 + 2.5 }));
+      }
+    }
+  }
+
+  // 패 자리
+  if (state.ko >= 0) {
+    const x = state.ko % size;
+    const y = (state.ko - x) / size;
+    svg.appendChild(el('rect', { class: 'ko', x: px(x) - 7, y: px(y) - 7, width: 14, height: 14 }));
+  }
+
+  // 선택한 덩어리의 활로
+  if (shown) {
+    for (const l of shown.liberties) {
+      const x = l % size;
+      svg.appendChild(el('circle', { class: 'lib', cx: px(x), cy: px((l - x) / size), r: 6 }));
+    }
+  }
+
+  // 마우스로 가리키는 자리 미리보기
+  const ghost = drawStone(svg, 0, 0, state.turn, 'ghost');
+  ghost.id = 'ghost';
+  ghost.setAttribute('visibility', 'hidden');
+
+  // 상태 표시
+  $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
+  $('turnText').textContent = over ? '대국 끝' : colorName(state.turn) + ' 차례';
+  $('capB').textContent = state.captures[BLACK];
+  $('capW').textContent = state.captures[WHITE];
+  $('undo').disabled = history.length <= 1;
+  $('pass').disabled = over;
+  document.querySelectorAll('.sizes button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(Number(b.dataset.size) === size));
+  });
+  svg.setAttribute('aria-label', size + '줄 바둑판, ' + (over ? '대국 끝' : colorName(state.turn) + ' 차례'));
+
+  renderResult(result);
+  save();
+}
+
+function renderResult(result) {
+  const box = $('result');
+  if (!result) {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+  const win = result.winner === EMPTY
+    ? '비겼어요.'
+    : colorName(result.winner) + '이 ' + result.margin + '집 이겼어요.';
+  box.hidden = false;
+  box.innerHTML =
+    '<h2>집 세어 보기</h2>' +
+    '<table><thead><tr><th></th><th>집</th><th>따낸 돌</th><th>덤</th><th>합계</th></tr></thead><tbody>' +
+    '<tr><td>흑</td><td>' + result.territory[BLACK] + '</td><td>' + result.captures[BLACK] + '</td><td>-</td><td><b>' + result.black + '</b></td></tr>' +
+    '<tr><td>백</td><td>' + result.territory[WHITE] + '</td><td>' + result.captures[WHITE] + '</td><td>' + result.komi + '</td><td><b>' + result.white + '</b></td></tr>' +
+    '</tbody></table>' +
+    '<p class="win">' + win + '</p>' +
+    '<p class="note">판 위의 돌이 모두 살아 있다고 보고 센 임시 결과예요. 죽은 돌 고르기는 다음 단계에서 넣을 예정이에요.</p>';
+}
+
+function say(text, warn) {
+  const m = $('msg');
+  m.textContent = text;
+  m.classList.toggle('warn', Boolean(warn));
+}
+
+function pointFromEvent(e) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return -1;
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+  const size = current().size;
+  const x = Math.round((p.x - MARGIN) / CELL);
+  const y = Math.round((p.y - MARGIN) / CELL);
+  if (x < 0 || y < 0 || x >= size || y >= size) return -1;
+  return y * size + x;
+}
+
+function onBoardClick(e) {
+  const state = current();
+  const idx = pointFromEvent(e);
+  if (idx < 0) return;
+
+  // 놓인 돌을 누르면 그 덩어리의 활로를 보여 준다.
+  if (state.board[idx] !== EMPTY) {
+    const g = groupAt(state.board, state.size, idx);
+    shown = g;
+    render();
+    const n = g.liberties.length;
+    say(colorName(g.color) + '돌 ' + g.stones.length + '점, 활로는 ' + n + '개예요.' + (n === 1 ? ' 단수예요!' : ''));
+    return;
+  }
+
+  const r = play(state, idx);
+  if (!r.ok) {
+    say(REASON_TEXT[r.reason] || '여기에는 둘 수 없어요.', true);
+    return;
+  }
+  shown = null;
+  history.push(r.state);
+  render();
+
+  const mover = colorName(state.turn);
+  const where = toCoord(state.size, idx);
+  if (r.captured.length > 0) {
+    say(mover + '이 ' + where + '에 두어 ' + r.captured.length + '점을 따냈어요.' + (r.state.ko >= 0 ? ' 패 모양이에요. 네모 표시 자리는 바로 되따낼 수 없어요.' : ''));
+  } else {
+    const danger = groupsInAtari(r.state).filter((g) => g.color === r.state.turn);
+    say(mover + ' ' + where + '.' + (danger.length ? ' 단수! ' + colorName(r.state.turn) + '돌의 활로가 하나 남았어요.' : ''));
+  }
+}
+
+function onPass() {
+  const state = current();
+  if (isOver(state)) return;
+  const next = pass(state);
+  shown = null;
+  history.push(next);
+  render();
+  say(isOver(next)
+    ? '두 사람이 연달아 쉬어서 대국이 끝났어요. 아래에서 집을 세어 볼게요.'
+    : colorName(state.turn) + '이 한 수 쉬었어요. 상대도 쉬면 대국이 끝나요.');
+}
+
+function onUndo() {
+  if (history.length <= 1) return;
+  history.pop();
+  shown = null;
+  render();
+  say('한 수 물렀어요.');
+}
+
+function newGame(size) {
+  history = [createGame(size)];
+  shown = null;
+  render();
+  say(size + '줄 새 판이에요. 흑부터 두어요.');
+}
+
+function onPointerMove(e) {
+  const ghost = $('ghost');
+  if (!ghost) return;
+  const state = current();
+  const idx = e.pointerType === 'mouse' ? pointFromEvent(e) : -1;
+  if (idx < 0 || state.board[idx] !== EMPTY || isOver(state)) {
+    ghost.setAttribute('visibility', 'hidden');
+    return;
+  }
+  const x = idx % state.size;
+  const y = (idx - x) / state.size;
+  ghost.setAttribute('transform', 'translate(' + x * CELL + ' ' + y * CELL + ')');
+  ghost.setAttribute('visibility', 'visible');
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ history: history.slice(-200), showAtari }));
+  } catch (err) {
+    // 저장이 막힌 환경(비공개 창 등)에서는 그냥 넘어간다.
+  }
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    const ok = Array.isArray(data.history) && data.history.length > 0 && data.history.every(
+      (s) => s && Number.isInteger(s.size) && Array.isArray(s.board) && s.board.length === s.size * s.size && s.captures
+    );
+    if (ok) history = data.history;
+    if (typeof data.showAtari === 'boolean') showAtari = data.showAtari;
+  } catch (err) {
+    // 저장된 내용이 깨졌으면 새 판으로 시작한다.
+  }
+}
+
+svg.addEventListener('click', onBoardClick);
+svg.addEventListener('pointermove', onPointerMove);
+svg.addEventListener('pointerleave', () => {
+  const ghost = $('ghost');
+  if (ghost) ghost.setAttribute('visibility', 'hidden');
+});
+$('pass').addEventListener('click', onPass);
+$('undo').addEventListener('click', onUndo);
+$('reset').addEventListener('click', () => newGame(current().size));
+$('atari').addEventListener('change', (e) => {
+  showAtari = e.target.checked;
+  render();
+});
+document.querySelectorAll('.sizes button').forEach((b) => {
+  b.addEventListener('click', () => {
+    const size = Number(b.dataset.size);
+    if (size === current().size) return;
+    if (current().moveNumber > 0 && !confirm('지금 두던 판을 지우고 ' + size + '줄 새 판을 시작할까요?')) return;
+    newGame(size);
+  });
+});
+
+load();
+$('atari').checked = showAtari;
+render();
+
+})();
+</script>
+</body>
+</html>

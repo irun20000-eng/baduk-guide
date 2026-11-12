@@ -1,0 +1,11 @@
+{
+  "name": "baduk-guide",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "초급자를 위한 바둑 학습 가이드 웹앱",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test"
+  }
+}

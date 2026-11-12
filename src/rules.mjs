@@ -215,6 +215,18 @@ export function score(state, dead = []) {
   };
 }
 
+// 화점 자리 (x, y). 9줄, 13줄, 19줄만 있다.
+export function starPoints(size) {
+  if (size === 9) return [[2, 2], [6, 2], [4, 4], [2, 6], [6, 6]];
+  if (size === 13) return [[3, 3], [9, 3], [6, 6], [3, 9], [9, 9]];
+  if (size === 19) {
+    const out = [];
+    for (const y of [3, 9, 15]) for (const x of [3, 9, 15]) out.push([x, y]);
+    return out;
+  }
+  return [];
+}
+
 // ---- 좌표와 판 표기 ----
 // 좌표: 가로 A~T(I 제외), 세로는 아래에서부터 1. 예: 9줄판 한가운데 = E5
 export function toCoord(size, idx) {

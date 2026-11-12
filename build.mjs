@@ -7,18 +7,51 @@ import path from 'node:path';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const read = (p) => readFile(path.join(root, p), 'utf8');
 
+// 합치는 순서. 뒤 파일이 앞 파일의 함수를 쓴다.
+export const SCRIPTS = [
+  'src/rules.mjs',
+  'src/ai.mjs',
+  'src/lesson-engine.mjs',
+  'src/lessons.mjs',
+  'src/store.mjs',
+  'src/ui/board.js',
+  'src/ui/app.js',
+];
+
+// 모듈 문법(import/export)을 걷어 낸다. 테스트에서는 모듈로, 앱에서는 한 스크립트 안의 함수로 쓴다.
+export function inlineModule(source) {
+  return source
+    .replace(/\r\n/g, '\n')
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?[ \t]*\n/gm, '')
+    .replace(/^export\s+/gm, '');
+}
+
+// 맨 바깥에서 선언한 이름. 파일끼리 이름이 겹치면 합쳤을 때 오류가 나므로 미리 찾는다.
+export function topLevelNames(source) {
+  const names = [];
+  const re = /^(?:export\s+)?(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
+  let m;
+  while ((m = re.exec(source))) names.push(m[1]);
+  return names;
+}
+
 export async function build() {
-  const [template, css, rules, app] = await Promise.all([
+  const [template, css, ...sources] = await Promise.all([
     read('src/index.template.html'),
     read('src/style.css'),
-    read('src/rules.mjs'),
-    read('src/app.js'),
+    ...SCRIPTS.map(read),
   ]);
 
-  // 규칙 엔진은 테스트에서는 모듈로, 앱에서는 같은 스크립트 안의 함수로 쓴다.
-  const rulesInline = rules.replace(/^export\s+/gm, '');
-  const js = "(function () {\n'use strict';\n" + rulesInline + '\n' + app + '\n})();';
+  const owner = new Map();
+  sources.forEach((src, i) => {
+    for (const name of topLevelNames(src)) {
+      if (owner.has(name)) throw new Error('이름이 겹칩니다: ' + name + ' (' + owner.get(name) + ', ' + SCRIPTS[i] + ')');
+      owner.set(name, SCRIPTS[i]);
+    }
+  });
 
+  const body = sources.map((src, i) => '// ---- ' + SCRIPTS[i] + ' ----\n' + inlineModule(src)).join('\n');
+  const js = "(function () {\n'use strict';\n" + body + '\n})();';
   if (/<\/script/i.test(js)) throw new Error('스크립트 안에 </script> 문자열이 있으면 안 됩니다.');
 
   const html = template

@@ -4,62 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f6f1e7">
-<title>바둑 첫걸음 (연습판 미리보기)</title>
+<title>바둑 첫걸음</title>
 <style>
 /*__CSS__*/
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div>
-      <h1>바둑 첫걸음</h1>
-      <p class="sub">연습판 미리보기</p>
-    </div>
-    <div class="sizes" role="group" aria-label="판 크기">
-      <button type="button" data-size="9" aria-pressed="true">9줄</button>
-      <button type="button" data-size="13" aria-pressed="false">13줄</button>
-      <button type="button" data-size="19" aria-pressed="false">19줄</button>
-    </div>
-  </header>
-
-  <section class="status" aria-label="대국 상황">
-    <div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText">흑 차례</strong></div>
-    <div class="caps">
-      <span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span>
-      <span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span>
-    </div>
-  </section>
-
-  <main>
-    <div class="boardwrap">
-      <svg id="board" role="img" aria-label="바둑판"></svg>
-    </div>
-    <p id="msg" class="msg" role="status" aria-live="polite">교차점을 눌러 돌을 놓아 보세요. 놓인 돌을 누르면 활로를 보여 줘요.</p>
-
-    <div class="controls">
-      <button type="button" id="undo">무르기</button>
-      <button type="button" id="pass">한 수 쉬기</button>
-      <button type="button" id="reset">새 판</button>
-      <label class="toggle"><input type="checkbox" id="atari" checked> 단수 알려주기</label>
-    </div>
-
-    <section id="result" class="result" hidden></section>
-
-    <section class="tips" aria-label="규칙 한눈에">
-      <h2>규칙 한눈에</h2>
-      <dl>
-        <div><dt>활로</dt><dd>돌 바로 옆(위·아래·왼쪽·오른쪽)의 빈 교차점. 돌의 숨구멍이에요.</dd></div>
-        <div><dt>따내기</dt><dd>상대 돌의 활로를 모두 막으면 그 돌을 판에서 들어내요.</dd></div>
-        <div><dt>단수</dt><dd>활로가 하나만 남은 상태. 다음 수에 잡힐 수 있어요.</dd></div>
-        <div><dt>착수금지</dt><dd>놓자마자 활로가 없는 곳에는 둘 수 없어요. 상대 돌을 따낼 수 있으면 괜찮아요.</dd></div>
-        <div><dt>패</dt><dd>한 점을 서로 번갈아 따낼 수 있는 모양. 바로 되따낼 수 없고, 다른 곳에 한 번 둔 뒤에 따낼 수 있어요.</dd></div>
-      </dl>
-    </section>
-  </main>
-
-  <footer>v0.1 뼈대 · 인터넷 없이도 열리는 한 파일 웹앱</footer>
-</div>
+<div class="app" id="app"></div>
+<noscript><p style="padding:24px">이 앱은 자바스크립트를 켜야 쓸 수 있어요.</p></noscript>
 <script>
 /*__JS__*/
 </script>

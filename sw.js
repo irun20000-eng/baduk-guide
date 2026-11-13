@@ -2,7 +2,7 @@
 // - 주소로 한 번 열면 앱 파일을 기기에 담아 두고, 인터넷이 없을 때 그것으로 연다.
 // - 화면(index.html)은 인터넷이 되면 늘 새로 받고(새 판 반영), 안 되면 담아 둔 것을 쓴다.
 // - 아이콘 등 나머지는 담아 둔 것을 먼저 쓴다.
-const CACHE = 'baduk-guide-1.1.0-bb3893bba7';
+const CACHE = 'baduk-guide-1.1.1-18d7fc73e4';
 const FILES = ["./","index.html","manifest.webmanifest","icons/apple-touch-icon.png","icons/favicon-32.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-192.png","icons/icon-maskable-512.png","icons/icon.svg"];
 
 self.addEventListener('install', (event) => {

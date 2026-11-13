@@ -346,11 +346,12 @@ function viewHome() {
   else if (settings.seen !== APP_VERSION && !store.profiles().length) updateSettings({ seen: APP_VERSION });
 }
 
-function openNews() {
+function openNews(all) {
   const dialog = $('newsDialog');
+  const items = all ? WHATS_NEW : newsSince(settings.seen);
   dialog.innerHTML =
     '<div class="dialog-head"><h2 id="newsTitle">새로 생긴 것 · v' + APP_VERSION + '</h2></div>' +
-    '<ul class="news-list">' + WHATS_NEW.map((n) => '<li><strong>' + esc(n.title) + '</strong><span>' + esc(n.text) + '</span></li>').join('') + '</ul>' +
+    '<ul class="news-list">' + items.map((n) => '<li><strong>' + esc(n.title) + '</strong><span>' + esc(n.text) + '</span></li>').join('') + '</ul>' +
     '<div class="dialog-actions"><button type="button" class="primary" id="newsOk">알겠어요</button></div>';
   const close = () => { updateSettings({ seen: APP_VERSION }); if (dialog.open) dialog.close(); };
   $('newsOk').addEventListener('click', close);
@@ -390,7 +391,9 @@ function openSettings() {
       '<div class="dialog-head"><h2>설정</h2><button type="button" class="text-btn" id="closeSettings">닫기</button></div>' +
       '<section class="set-group"><h3>소리와 진동</h3>' +
       '<label class="toggle set-row"><span>돌 소리와 알림 소리</span><input type="checkbox" id="setSound"' + (settings.sound ? ' checked' : '') + '></label>' +
-      '<label class="toggle set-row"><span>진동' + (vib ? '' : ' <small>(이 기기는 진동을 지원하지 않아요)</small>') + '</span><input type="checkbox" id="setVibrate"' + (settings.vibrate ? ' checked' : '') + (vib ? '' : ' disabled') + '></label></section>' +
+      '<label class="toggle set-row"><span>진동' + (vib ? '' : ' <small>(이 기기는 진동을 지원하지 않아요)</small>') + '</span><input type="checkbox" id="setVibrate"' + (settings.vibrate ? ' checked' : '') + (vib ? '' : ' disabled') + '></label>' +
+      '<div class="set-actions"><button type="button" class="ghost-btn" id="soundTest">소리 들어 보기</button></div>' +
+      '<p class="form-msg" id="soundNote" role="status"></p></section>' +
       '<section class="set-group"><h3>화면</h3><div class="seg theme-seg" role="group" aria-label="화면 밝기">' +
       themeBtn('auto', '기기 설정') + themeBtn('dark', '어둡게') + themeBtn('light', '밝게') + '</div></section>' +
       '<section class="set-group"><h3>기록 옮기기</h3><p class="hint-text">모든 프로필의 배운 기록을 파일 하나로 저장하고, 다른 기기에서 가져올 수 있어요.</p>' +
@@ -402,6 +405,15 @@ function openSettings() {
     $('closeSettings').addEventListener('click', () => dialog.close());
     $('setSound').addEventListener('change', (e) => updateSettings({ sound: e.target.checked }));
     $('setVibrate').addEventListener('change', (e) => updateSettings({ vibrate: e.target.checked }));
+    $('soundTest').addEventListener('click', () => {
+      const note = $('soundNote');
+      if (!settings.sound && !(settings.vibrate && canVibrate())) {
+        note.textContent = '소리와 진동이 모두 꺼져 있어요. 위에서 켜 보세요.';
+        return;
+      }
+      ['place', 'capture', 'ok', 'bad'].forEach((k, n) => setTimeout(() => playCue(k), n * 450));
+      note.textContent = (settings.sound ? '돌 놓기, 따내기, 맞음, 아쉬움 소리를 차례로 들려줘요.' : '소리는 꺼져 있어요. 진동만 차례로 울려요.') + ' 들리지 않으면 기기 소리 크기와 무음 모드를 확인해 주세요.';
+    });
     dialog.querySelectorAll('.theme-seg button').forEach((b) => b.addEventListener('click', () => {
       updateSettings({ theme: b.dataset.theme });
       dialog.querySelectorAll('.theme-seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
@@ -424,7 +436,7 @@ function openSettings() {
       dialog.close();
       route();
     });
-    $('newsAgain').addEventListener('click', () => { dialog.close(); openNews(); });
+    $('newsAgain').addEventListener('click', () => { dialog.close(); openNews(true); });
   };
   draw();
   dialog.showModal();

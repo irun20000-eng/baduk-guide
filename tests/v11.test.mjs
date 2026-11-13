@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createStore, memoryStorage, migrateData, validateBackup, STORE_KEY, STORE_REV, MAX_REVIEW } from '../src/store.mjs';
-import { loadSettings, saveSettings, cleanSettings, resolveTheme, shouldShowNews, APP_VERSION, SETTINGS_KEY, DEFAULT_SETTINGS, WHATS_NEW } from '../src/settings.mjs';
+import { loadSettings, saveSettings, cleanSettings, resolveTheme, shouldShowNews, newsSince, compareVersion, APP_VERSION, SETTINGS_KEY, DEFAULT_SETTINGS, WHATS_NEW } from '../src/settings.mjs';
 import { lessonById } from '../src/lessons.mjs';
 
 // v1.0이 실제로 저장하던 모양 (rev 없음, review 없음)
@@ -161,3 +161,16 @@ test('판 번호: 앱 안 표시와 package.json 이 같다', async () => {
   assert.equal(APP_VERSION, pkg.version);
 });
 
+
+test('새로 생긴 것(v1.1.1): 마지막으로 본 판 뒤의 항목만 보여 준다', () => {
+  assert.ok(WHATS_NEW.every((n) => /^\d+\.\d+\.\d+$/.test(n.v)));
+  assert.ok(WHATS_NEW.some((n) => n.v === APP_VERSION), '이번 판 항목이 있어야 한다');
+  assert.equal(compareVersion('1.1.1', '1.1.0') > 0, true);
+  assert.equal(compareVersion('1.10.0', '1.9.0') > 0, true);
+  assert.equal(compareVersion('1.1.0', '1.1.0'), 0);
+  assert.deepEqual(newsSince('1.1.0').map((n) => n.v), ['1.1.1']);
+  assert.equal(newsSince('').length, WHATS_NEW.length);
+  assert.equal(newsSince(APP_VERSION).length, 0);
+  assert.equal(shouldShowNews({ seen: '1.1.0' }, true), true);
+  assert.equal(shouldShowNews({ seen: APP_VERSION }, true), false);
+});

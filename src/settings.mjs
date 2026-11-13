@@ -1,7 +1,7 @@
 // 기기 설정(소리, 진동, 화면 밝기)과 "새로 생긴 것" 안내. 프로필과 상관없이 기기마다 하나.
 // storage 는 getItem/setItem 을 가진 객체. 저장이 막혀 있으면 기본값으로 동작한다.
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.1.1';
 export const SETTINGS_KEY = 'baduk-guide:settings';
 export const THEMES = ['auto', 'dark', 'light'];
 
@@ -12,14 +12,15 @@ export const DEFAULT_SETTINGS = Object.freeze({
   seen: '', // "새로 생긴 것"을 마지막으로 보여 준 판
 });
 
-// 이번 판에서 새로 생긴 것. 판이 바뀌면 한 번만 보여 준다.
+// 판마다 새로 생긴 것. 마지막으로 본 판보다 새 판의 항목만 한 번 보여 준다.
 export const WHATS_NEW = [
-  { title: '돌 소리와 진동', text: '돌을 놓거나 따낼 때 작은 소리가 나요. 설정에서 끌 수 있어요.' },
-  { title: '틀린 문제 다시 풀기', text: '틀리거나 힌트를 본 문제를 모아 두었다가 다시 풀 수 있어요. 한 번에 맞히면 목록에서 빠져요.' },
-  { title: '밝은 화면', text: '설정에서 화면을 밝게 바꿀 수 있어요. 기기 설정을 따라가게 할 수도 있어요.' },
-  { title: '기록 옮기기', text: '배운 기록을 파일로 내보내고, 다른 기기에서 가져올 수 있어요.' },
-  { title: '키보드로 두기', text: '컴퓨터에서는 화살표로 자리를 옮기고 Enter로 돌을 놓아요. P는 한 수 쉬기예요.' },
-  { title: '인터넷 없이 열기', text: '주소로 한 번 열어 두면 인터넷이 없어도 다시 열려요.' },
+  { v: '1.1.1', title: '소리 들어 보기, 더 잘 보이는 좌표', text: '설정에서 돌 소리를 미리 들어 볼 수 있어요. 바둑판 좌표 글자를 더 진하고 크게 했어요.' },
+  { v: '1.1.0', title: '돌 소리와 진동', text: '돌을 놓거나 따낼 때 작은 소리가 나요. 설정에서 끌 수 있어요.' },
+  { v: '1.1.0', title: '틀린 문제 다시 풀기', text: '틀리거나 힌트를 본 문제를 모아 두었다가 다시 풀 수 있어요. 한 번에 맞히면 목록에서 빠져요.' },
+  { v: '1.1.0', title: '밝은 화면', text: '설정에서 화면을 밝게 바꿀 수 있어요. 기기 설정을 따라가게 할 수도 있어요.' },
+  { v: '1.1.0', title: '기록 옮기기', text: '배운 기록을 파일로 내보내고, 다른 기기에서 가져올 수 있어요.' },
+  { v: '1.1.0', title: '키보드로 두기', text: '컴퓨터에서는 화살표로 자리를 옮기고 Enter로 돌을 놓아요. P는 한 수 쉬기예요.' },
+  { v: '1.1.0', title: '인터넷 없이 열기', text: '주소로 한 번 열어 두면 인터넷이 없어도 다시 열려요.' },
 ];
 
 export function cleanSettings(s) {
@@ -59,6 +60,18 @@ export function resolveTheme(theme, prefersLight) {
 }
 
 // "새로 생긴 것"을 보여 줄지. 처음 쓰는 사람(프로필 없음)에게는 보여 주지 않고 본 것으로 친다.
+export function compareVersion(a, b) {
+  const pa = String(a || '0').split('.').map((n) => Number(n) || 0);
+  const pb = String(b || '0').split('.').map((n) => Number(n) || 0);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+  return 0;
+}
+
+// 마지막으로 본 판(seen) 뒤에 생긴 항목. seen 이 비어 있으면(v1.0에서 올라옴) 전부.
+export function newsSince(seen) {
+  return WHATS_NEW.filter((n) => !seen || compareVersion(n.v, seen) > 0);
+}
+
 export function shouldShowNews(settings, hasProfiles) {
-  return Boolean(hasProfiles) && settings.seen !== APP_VERSION;
+  return Boolean(hasProfiles) && newsSince(settings.seen).length > 0;
 }

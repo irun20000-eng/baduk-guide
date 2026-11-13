@@ -93,11 +93,15 @@ function createBoardView(svg, onTap) {
     model = next;
     const state = model.state;
     const size = state.size;
-    margin = model.coords ? 34 : 30;
+    if (svg.parentElement) svg.parentElement.style.maxWidth = boardMaxWidth(size) + 'px';
+    // 좌표 글자가 화면에서 9px보다 작아지는 판(휴대폰의 13줄, 19줄)에서는 좌표를 숨긴다.
+    let coords = Boolean(model.coords);
+    const shown = svg.getBoundingClientRect().width;
+    if (coords && shown > 0 && shown / (34 * 2 + (size - 1) * CELL) * 13 < 9) coords = false;
+    margin = coords ? 34 : 30;
     const extent = margin * 2 + (size - 1) * CELL;
     svg.setAttribute('viewBox', '0 0 ' + extent + ' ' + extent);
     svg.textContent = '';
-    if (svg.parentElement) svg.parentElement.style.maxWidth = boardMaxWidth(size) + 'px';
 
     const defs = svgEl('defs', {});
     defs.innerHTML =
@@ -113,7 +117,7 @@ function createBoardView(svg, onTap) {
       svg.appendChild(svgEl('circle', { class: 'star', cx: px(x), cy: px(y), r: 3.6 }));
     }
 
-    if (model.coords) {
+    if (coords) {
       for (let i = 0; i < size; i++) {
         const col = svgEl('text', { class: 'label', x: px(i), y: extent - 11 });
         col.textContent = toCoord(size, i)[0];

@@ -31,6 +31,11 @@ function boardMaxWidth(size) {
 function createBoardView(svg, onTap) {
   let model = null;
   let margin = 30;
+  let cursor = -1; // 키보드로 고르는 자리
+  let kbd = false; // 키보드를 쓰는 중이면 커서를 보인다
+  let prevBoard = null;
+  let prevSize = 0;
+  let live = null;
   const px = (n) => margin + n * CELL;
 
   function pointFromEvent(e) {
@@ -50,8 +55,8 @@ function createBoardView(svg, onTap) {
     g.appendChild(svgEl('circle', {
       cx: px(x), cy: px(y), r: CELL * 0.47,
       fill: color === BLACK ? 'url(#gB)' : 'url(#gW)',
-      stroke: color === BLACK ? '#000' : '#b3ad9f',
-      'stroke-width': 0.8,
+      stroke: color === BLACK ? '#000' : '#5e5545',
+      'stroke-width': color === BLACK ? 0.8 : 1.2,
     }));
     return g;
   }
@@ -175,6 +180,90 @@ function createBoardView(svg, onTap) {
     svg.appendChild(ghost);
     svg._ghost = ghost;
     svg.classList.toggle('tappable', Boolean(onTap));
+
+    // 키보드 커서
+    if (cursor >= size * size) cursor = -1;
+    if (onTap && kbd && cursor >= 0) {
+      const x = cursor % size;
+      const y = (cursor - x) / size;
+      svg.appendChild(svgEl('rect', { class: 'kbd-cursor', x: px(x) - CELL / 2 + 1, y: px(y) - CELL / 2 + 1, width: CELL - 2, height: CELL - 2, rx: 8 }));
+      if (model.ghost && state.board[cursor] === EMPTY) {
+        ghost.setAttribute('transform', 'translate(' + x * CELL + ' ' + y * CELL + ')');
+        ghost.setAttribute('visibility', 'visible');
+      }
+    }
+
+    // 소리: 빈 자리에 돌 하나가 새로 놓였을 때만(새 문제로 판이 통째로 바뀐 때는 소리 없음)
+    const b = state.board;
+    if (prevBoard && prevSize === size && state.lastMove >= 0 && prevBoard[state.lastMove] === EMPTY && b[state.lastMove] !== EMPTY) {
+      let added = 0;
+      let removed = 0;
+      for (let k = 0; k < b.length; k++) {
+        if (prevBoard[k] === EMPTY && b[k] !== EMPTY) added++;
+        else if (prevBoard[k] !== EMPTY && b[k] === EMPTY) removed++;
+      }
+      if (added === 1) playCue(removed > 0 ? 'capture' : 'place');
+    }
+    prevBoard = b.slice();
+    prevSize = size;
+  }
+
+  function describe(idx) {
+    const c = model.state.board[idx];
+    return toCoord(model.state.size, idx) + (c === BLACK ? ', 흑돌' : c === WHITE ? ', 백돌' : ', 빈 자리');
+  }
+
+  if (onTap) {
+    svg.setAttribute('tabindex', '0');
+    svg.setAttribute('role', 'application');
+    svg.setAttribute('aria-roledescription', '바둑판');
+    svg.setAttribute('aria-label', '바둑판. 화살표로 자리를 옮기고 Enter나 스페이스로 돌을 놓아요. P는 한 수 쉬기');
+    live = document.createElement('p');
+    live.className = 'sr-only';
+    live.setAttribute('aria-live', 'polite');
+    if (svg.parentElement) svg.parentElement.appendChild(live);
+    svg.addEventListener('keydown', (e) => {
+      if (!model) return;
+      const size = model.state.size;
+      if (cursor < 0) cursor = Math.floor(size / 2) * (size + 1);
+      let x = cursor % size;
+      let y = (cursor - x) / size;
+      const k = e.key;
+      if (k === 'ArrowLeft') x = Math.max(0, x - 1);
+      else if (k === 'ArrowRight') x = Math.min(size - 1, x + 1);
+      else if (k === 'ArrowUp') y = Math.max(0, y - 1);
+      else if (k === 'ArrowDown') y = Math.min(size - 1, y + 1);
+      else if (k === 'Enter' || k === ' ') {
+        e.preventDefault();
+        kbd = true;
+        onTap(cursor);
+        return;
+      } else if (k === 'p' || k === 'P' || k === 'ㅔ') {
+        const pb = document.getElementById('passBtn');
+        if (pb && !pb.disabled && !pb.hidden && pb.offsetParent !== null) {
+          e.preventDefault();
+          pb.click();
+        }
+        return;
+      } else return;
+      e.preventDefault();
+      kbd = true;
+      cursor = y * size + x;
+      draw(model);
+      if (live) live.textContent = describe(cursor);
+    });
+    svg.addEventListener('focus', () => {
+      if (!model || !svg.matches(':focus-visible')) return;
+      kbd = true;
+      if (cursor < 0) cursor = Math.floor(model.state.size / 2) * (model.state.size + 1);
+      draw(model);
+    });
+    svg.addEventListener('blur', () => {
+      if (!kbd || !model) return;
+      kbd = false;
+      draw(model);
+    });
+    svg.addEventListener('pointerdown', () => { kbd = false; });
   }
 
   svg.addEventListener('click', (e) => {

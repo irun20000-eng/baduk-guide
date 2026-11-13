@@ -46,3 +46,23 @@ test('설치: manifest와 아이콘 파일이 있고 head에서 가리킨다', a
   assert.ok(hrefs.includes('manifest.webmanifest') && hrefs.includes('icons/apple-touch-icon.png'));
   for (const f of [...hrefs, ...mf.icons.map((i) => i.src)]) assert.ok((await stat(new URL(f, root))).size > 0, f);
 });
+
+// v1.1 인터넷 없이 열기 (index.html 을 새로 쓰는 시험은 이 파일 안에서 차례로 돈다)
+test('서비스 워커: sw.js 를 만들고, 담을 파일이 모두 있고, 캐시 이름에 판 번호가 들어간다', async () => {
+  const { sw } = await build();
+  const src = await readFile(sw.out, 'utf8');
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.ok(sw.cache.startsWith('baduk-guide-' + pkg.version + '-'));
+  assert.ok(src.includes(JSON.stringify(sw.cache)) || src.includes("'" + sw.cache + "'"));
+  assert.equal(src.includes('__CACHE__') || src.includes('__FILES__'), false);
+  for (const f of ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png']) assert.ok(sw.files.includes(f), f);
+  const { stat } = await import('node:fs/promises');
+  for (const f of sw.files.filter((x) => x !== './')) assert.ok((await stat(new URL('../' + f, import.meta.url))).size > 0, f);
+  assert.doesNotThrow(() => new Function(src.replace(/self\./g, 'globalThis.')));
+});
+
+test('서비스 워커: 주소(http/https)로 열었을 때만 올리고, 파일로 열면 건드리지 않는다', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /\/\^https\?:\$\/\.test\(location\.protocol\)/);
+  assert.match(html, /serviceWorker\.register\('sw\.js'\)/);
+});

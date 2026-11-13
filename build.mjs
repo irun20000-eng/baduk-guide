@@ -1,6 +1,7 @@
 // src/ 의 조각들을 인터넷 없이 열리는 한 파일(index.html)로 합친다.
 // 사용: node build.mjs
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -19,7 +20,9 @@ export const SCRIPTS = [
   'src/lessons/unit5.mjs',
   'src/lessons.mjs',
   'src/store.mjs',
+  'src/settings.mjs',
   'src/glossary.mjs',
+  'src/ui/sound.js',
   'src/ui/board.js',
   'src/ui/app.js',
 ];
@@ -66,7 +69,28 @@ export async function build() {
 
   const out = path.join(root, 'index.html');
   await writeFile(out, html, 'utf8');
-  return { out, bytes: Buffer.byteLength(html) };
+  const sw = await buildServiceWorker(html);
+  return { out, bytes: Buffer.byteLength(html), sw };
+}
+
+// 인터넷 없이 열기: 주소(https)로 열었을 때만 쓰는 서비스 워커. index.html 안에는 넣지 않는다.
+// 캐시 이름에 판 번호와 index.html 지문을 넣어, 고쳐서 다시 올리면 새 캐시로 바뀌고 옛 캐시는 지운다.
+export async function precacheList() {
+  const icons = (await readdir(path.join(root, 'icons'))).filter((f) => /\.(png|svg)$/.test(f)).sort();
+  return ['./', 'index.html', 'manifest.webmanifest', ...icons.map((f) => 'icons/' + f)];
+}
+
+export async function buildServiceWorker(html) {
+  const pkg = JSON.parse(await read('package.json'));
+  const hash = createHash('sha256').update(html).digest('hex').slice(0, 10);
+  const cache = 'baduk-guide-' + pkg.version + '-' + hash;
+  const files = await precacheList();
+  const src = (await read('src/sw.template.js'))
+    .replace('__CACHE__', cache)
+    .replace('__FILES__', JSON.stringify(files));
+  const out = path.join(root, 'sw.js');
+  await writeFile(out, src, 'utf8');
+  return { out, cache, files };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

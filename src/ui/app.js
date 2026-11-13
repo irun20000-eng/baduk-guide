@@ -19,6 +19,8 @@ const ICON = {
   check: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   flag: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M6 21V4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M6 5h11l-2.5 3.5L17 12H6z" fill="currentColor"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="9" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>',
+  next: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
 // 안내 캐릭터 돌돌이 (흰 돌). mood: smile | cheer | oops
@@ -55,7 +57,38 @@ function safeStorage() {
 
 const storage = safeStorage();
 const store = createStore(storage);
+let settings = loadSettings(storage);
 let leaveView = null; // 화면을 떠날 때 정리할 일 (타이머 등)
+
+// ---------------------------------------------------------------- 설정: 화면 밝기, 소리, 인터넷 없이 열기
+
+const lightQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+function applyTheme() {
+  const theme = resolveTheme(settings.theme, Boolean(lightQuery && lightQuery.matches));
+  document.documentElement.dataset.theme = theme;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f3eee2' : '#101a1f');
+  const scheme = document.querySelector('meta[name="color-scheme"]');
+  if (scheme) scheme.setAttribute('content', theme);
+}
+
+function updateSettings(patch) {
+  settings = saveSettings(storage, { ...settings, ...patch });
+  setSoundPrefs(settings);
+  applyTheme();
+}
+
+setSoundPrefs(settings);
+applyTheme();
+if (lightQuery && lightQuery.addEventListener) lightQuery.addEventListener('change', applyTheme);
+
+// 주소(http, https)로 열었을 때만 서비스 워커를 올린다. 파일로 열면 원래부터 인터넷이 필요 없다.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 
 function go(hash) {
   if (location.hash === hash) route();
@@ -93,6 +126,11 @@ function route() {
   if (h === '#/game') return viewGame();
   if (h === '#/practice') return viewPractice();
   if (h === '#/terms') return viewTerms();
+  if (h === '#/review') {
+    const lesson = store.current() ? reviewLesson() : null;
+    if (lesson) return viewLesson(lesson);
+    return go('#/');
+  }
   return viewHome();
 }
 
@@ -108,6 +146,27 @@ function say(text, kind) {
   m.className = 'msg' + (kind ? ' ' + kind : '');
   const dock = $('dock');
   if (dock) dock.className = 'dock' + (dock.dataset.plain ? ' plain' : '') + (kind ? ' ' + kind : '');
+  if (kind === 'ok') playCue('ok');
+  else if (kind === 'warn') playCue('bad');
+}
+
+// 복습 문제 묶음. 열쇠는 '차시 id:걸음 번호'. 자료가 바뀌어 찾을 수 없는 것은 목록에서 뺀다.
+function reviewLesson() {
+  const keys = [];
+  const steps = [];
+  for (const key of store.reviewList()) {
+    const [lid, n] = key.split(':');
+    const src = lessonById(lid) || quizById(lid);
+    const step = src && src.steps[Number(n)];
+    if (!step || step.type === 'explain') {
+      store.resolveReview(key);
+      continue;
+    }
+    keys.push(key);
+    steps.push(step);
+  }
+  if (!steps.length) return null;
+  return { id: 'REVIEW', review: true, title: '틀린 문제 다시 풀기', steps, keys, summary: '' };
 }
 
 // 판 그림(줄 문자열)을 그대로 그린다. 설명용 작은 판에 쓴다.
@@ -243,18 +302,27 @@ function viewHome() {
   const chip = me
     ? '<button type="button" class="profile-chip" id="profileBtn" aria-label="프로필 바꾸기"><span class="avatar c' + me.color + '">' + esc([...me.name][0]) + '</span><span>' + esc(me.name) + '</span></button>'
     : '';
+  const gear = '<button type="button" class="icon-btn" id="settingsBtn" aria-label="설정">' + ICON.gear + '</button>';
+  const reviewCount = me ? store.reviewList().length : 0;
+  const review = reviewCount
+    ? '<a class="glass review-card" href="#/review"><span class="review-num" aria-hidden="true">' + reviewCount + '</span>' +
+      '<span class="review-body"><strong>틀린 문제 다시 풀기</strong><small>틀렸거나 힌트를 본 문제 ' + reviewCount + '개. 한 번에 맞히면 빠져요</small></span>' +
+      '<span class="review-go" aria-hidden="true">' + ICON.next + '</span></a>'
+    : '';
 
   root.innerHTML =
-    '<header class="top"><div><h1>바둑 첫걸음</h1><p class="sub">처음 배우는 바둑, 한 걸음씩</p></div>' + chip + '</header>' +
-    hero + stats +
+    '<header class="top"><div><h1>바둑 첫걸음</h1><p class="sub">처음 배우는 바둑, 한 걸음씩</p></div><div class="top-actions">' + chip + gear + '</div></header>' +
+    hero + stats + review +
     '<h2 class="section-title">학습 지도</h2>' + unitHtml +
     '<h2 class="section-title">자유롭게 두기</h2><div class="play-grid">' +
     '<a class="glass play-card" href="#/game"><strong>9줄 대국</strong><span>돌돌이와, 또는 둘이서 한 판 두고 집 세기</span></a>' +
     '<a class="glass play-card" href="#/capture"><strong>따내기 바둑</strong><span>먼저 한 점 따내면 이기는 짧은 놀이</span></a>' +
     '<a class="glass play-card" href="#/practice"><strong>연습판</strong><span>9줄, 13줄, 19줄 판에서 마음껏 두기</span></a>' +
     '<a class="glass play-card" href="#/terms"><strong>용어 사전</strong><span>배운 바둑 말을 그림으로 다시 보기</span></a></div>' +
-    '<footer>v1.0 · 24차시 · 인터넷 없이도 열려요</footer>' +
-    '<dialog id="profileDialog" aria-label="프로필"></dialog>';
+    '<footer>v' + APP_VERSION + ' · 24차시 · 인터넷 없이도 열려요</footer>' +
+    '<dialog id="profileDialog" aria-label="프로필"></dialog>' +
+    '<dialog id="settingsDialog" aria-label="설정"></dialog>' +
+    '<dialog id="newsDialog" aria-labelledby="newsTitle"></dialog>';
 
   drawPathLines();
   const onResize = () => drawPathLines();
@@ -272,6 +340,94 @@ function viewHome() {
   } else {
     $('profileBtn').addEventListener('click', openProfiles);
   }
+  $('settingsBtn').addEventListener('click', openSettings);
+
+  if (shouldShowNews(settings, store.profiles().length > 0)) openNews();
+  else if (settings.seen !== APP_VERSION && !store.profiles().length) updateSettings({ seen: APP_VERSION });
+}
+
+function openNews() {
+  const dialog = $('newsDialog');
+  dialog.innerHTML =
+    '<div class="dialog-head"><h2 id="newsTitle">새로 생긴 것 · v' + APP_VERSION + '</h2></div>' +
+    '<ul class="news-list">' + WHATS_NEW.map((n) => '<li><strong>' + esc(n.title) + '</strong><span>' + esc(n.text) + '</span></li>').join('') + '</ul>' +
+    '<div class="dialog-actions"><button type="button" class="primary" id="newsOk">알겠어요</button></div>';
+  const close = () => { updateSettings({ seen: APP_VERSION }); if (dialog.open) dialog.close(); };
+  $('newsOk').addEventListener('click', close);
+  dialog.addEventListener('cancel', () => updateSettings({ seen: APP_VERSION }), { once: true });
+  dialog.showModal();
+}
+
+const BACKUP_ERROR = {
+  format: '기록 파일이 아니거나 파일이 깨졌어요.',
+  app: '바둑 첫걸음에서 내보낸 파일이 아니에요.',
+  profiles: '파일 안의 프로필 자료가 올바르지 않아요.',
+  'too-many': '프로필이 ' + MAX_PROFILES + '명보다 많아서 가져올 수 없어요.',
+};
+
+function downloadBackup() {
+  const data = store.exportBackup();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  a.href = url;
+  a.download = '바둑첫걸음_기록_' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return data;
+}
+
+function openSettings() {
+  const dialog = $('settingsDialog');
+  const draw = (note, noteKind) => {
+    const themeBtn = (v, label) => '<button type="button" data-theme="' + v + '" aria-pressed="' + (settings.theme === v) + '">' + label + '</button>';
+    const vib = canVibrate();
+    dialog.innerHTML =
+      '<div class="dialog-head"><h2>설정</h2><button type="button" class="text-btn" id="closeSettings">닫기</button></div>' +
+      '<section class="set-group"><h3>소리와 진동</h3>' +
+      '<label class="toggle set-row"><span>돌 소리와 알림 소리</span><input type="checkbox" id="setSound"' + (settings.sound ? ' checked' : '') + '></label>' +
+      '<label class="toggle set-row"><span>진동' + (vib ? '' : ' <small>(이 기기는 진동을 지원하지 않아요)</small>') + '</span><input type="checkbox" id="setVibrate"' + (settings.vibrate ? ' checked' : '') + (vib ? '' : ' disabled') + '></label></section>' +
+      '<section class="set-group"><h3>화면</h3><div class="seg theme-seg" role="group" aria-label="화면 밝기">' +
+      themeBtn('auto', '기기 설정') + themeBtn('dark', '어둡게') + themeBtn('light', '밝게') + '</div></section>' +
+      '<section class="set-group"><h3>기록 옮기기</h3><p class="hint-text">모든 프로필의 배운 기록을 파일 하나로 저장하고, 다른 기기에서 가져올 수 있어요.</p>' +
+      '<div class="set-actions"><button type="button" class="ghost-btn" id="exportBtn">기록 내보내기</button>' +
+      '<label class="ghost-btn file-btn">기록 가져오기<input type="file" id="importFile" accept="application/json,.json"></label></div>' +
+      '<p class="form-msg ' + (noteKind || '') + '" id="setNote" role="status">' + esc(note || '') + '</p></section>' +
+      '<p class="set-foot">바둑 첫걸음 v' + APP_VERSION + ' · <button type="button" class="text-btn" id="newsAgain">새로 생긴 것</button></p>';
+
+    $('closeSettings').addEventListener('click', () => dialog.close());
+    $('setSound').addEventListener('change', (e) => updateSettings({ sound: e.target.checked }));
+    $('setVibrate').addEventListener('change', (e) => updateSettings({ vibrate: e.target.checked }));
+    dialog.querySelectorAll('.theme-seg button').forEach((b) => b.addEventListener('click', () => {
+      updateSettings({ theme: b.dataset.theme });
+      dialog.querySelectorAll('.theme-seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    }));
+    $('exportBtn').addEventListener('click', () => {
+      const data = downloadBackup();
+      draw('프로필 ' + data.data.profiles.length + '명의 기록을 파일로 내보냈어요.', 'ok');
+    });
+    $('importFile').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      let text = '';
+      try { text = await file.text(); } catch (err) { return draw(BACKUP_ERROR.format, 'warn'); }
+      const check = validateBackup(text);
+      if (!check.ok) return draw(BACKUP_ERROR[check.error] || BACKUP_ERROR.format, 'warn');
+      const names = check.data.profiles.map((p) => p.name).join(', ') || '없음';
+      if (!confirm('지금 기기의 기록(프로필 ' + store.profiles().length + '명)을 가져온 기록(프로필 ' + check.data.profiles.length + '명: ' + names + ')으로 바꿀까요? 지금 기록은 사라져요.')) return draw('가져오기를 취소했어요.');
+      const r = store.importBackup(check.data ? { app: BACKUP_APP, kind: 'backup', data: check.data } : text);
+      if (!r.ok) return draw(BACKUP_ERROR[r.error] || BACKUP_ERROR.format, 'warn');
+      dialog.close();
+      route();
+    });
+    $('newsAgain').addEventListener('click', () => { dialog.close(); openNews(); });
+  };
+  draw();
+  dialog.showModal();
 }
 
 function openProfiles() {
@@ -327,10 +483,11 @@ function openProfiles() {
 
 function viewLesson(lesson) {
   const total = lesson.steps.length;
-  const eyebrow = lesson.quiz ? lesson.unit + '단원 미션' : lesson.no + '차시';
+  const eyebrow = lesson.review ? '복습' : lesson.quiz ? lesson.unit + '단원 미션' : lesson.no + '차시';
   let i = 0;
   let mistakes = 0;
   let hints = 0;
+  let cleared = 0; // 복습에서 한 번에 맞힌 문제 수
   let S = null; // 지금 걸음의 진행 상태
   let timer = null;
   leaveView = () => { if (timer) clearTimeout(timer); timer = null; };
@@ -384,6 +541,7 @@ function viewLesson(lesson) {
 
   function miss(text) {
     mistakes++;
+    S.flag = true;
     say(text || '아쉬워요. 다시 해 볼까요?', 'warn');
     mood('oops');
   }
@@ -605,6 +763,7 @@ function viewLesson(lesson) {
     const step = S.step;
     if (S.hintLevel < 2) hints++;
     S.hintLevel++;
+    S.flag = true;
     if (step.type === 'count') {
       if (step.check === 'liberties') {
         S.libs = groupAt(S.state.board, S.parsed.size, S.parsed.targets[0]).liberties;
@@ -639,8 +798,17 @@ function viewLesson(lesson) {
     draw();
   }
 
+  // 걸음을 떠날 때 복습 목록을 고친다. 틀렸거나 힌트를 보면 넣고, 한 번에 맞히면 뺀다.
+  function recordStep() {
+    if (!store.current() || S.step.type === 'explain') return;
+    const key = lesson.review ? lesson.keys[i] : lesson.id + ':' + i;
+    if (S.flag) store.addReview(key);
+    else if (store.resolveReview(key) && lesson.review) cleared++;
+  }
+
   function onNext() {
     if (!S.done) return;
+    recordStep();
     i++;
     if (i >= total) return finish();
     startStep();
@@ -649,6 +817,7 @@ function viewLesson(lesson) {
   }
 
   function finish() {
+    if (lesson.review) return finishReview();
     const stars = starsFor(mistakes, hints);
     let nextBtn;
     if (lesson.quiz) {
@@ -673,6 +842,20 @@ function viewLesson(lesson) {
       '<div class="finish-actions">' + nextBtn + (lesson.quiz ? '' : '<a class="ghost-btn" href="#/">학습 지도로</a>') +
       '<button type="button" class="text-btn" id="again">다시 하기</button></div></section></div>';
     $('again').addEventListener('click', () => viewLesson(lesson));
+    window.scrollTo(0, 0);
+  }
+
+  function finishReview() {
+    const left = store.reviewList().length;
+    root.innerHTML =
+      '<div class="lesson-view">' + barHtml(eyebrow, lesson.title) +
+      '<div class="segs">' + '<i class="done"></i>'.repeat(total) + '</div>' +
+      '<section class="glass finish"><span class="dol big cheer">' + dolSvg('cheer') + '</span>' +
+      '<h2>복습을 마쳤어요</h2><p class="praise">' + total + '문제 가운데 ' + cleared + '문제를 한 번에 맞혔어요</p>' +
+      '<p class="summary">' + (left ? '아직 ' + left + '문제가 남아 있어요. 내일 다시 풀어 봐도 좋아요.' : '틀린 문제를 모두 풀었어요. 복습 목록이 비었어요.') + '</p>' +
+      '<div class="finish-actions"><a class="primary" href="#/">학습 지도로</a>' +
+      (left ? '<button type="button" class="text-btn" id="again">남은 문제 다시 풀기</button>' : '') + '</div></section></div>';
+    if (left) $('again').addEventListener('click', () => { const l = reviewLesson(); if (l) viewLesson(l); else go('#/'); });
     window.scrollTo(0, 0);
   }
 

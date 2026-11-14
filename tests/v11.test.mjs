@@ -139,7 +139,10 @@ test('설정: 기본값(소리 켬, 진동 켬, 어두운 화면), 잘못된 값
   assert.deepEqual(loadSettings(s), DEFAULT_SETTINGS);
   assert.equal(DEFAULT_SETTINGS.theme, 'dark');
   saveSettings(s, { sound: false, vibrate: true, theme: 'light', seen: '1.1.0', junk: 1 });
-  assert.deepEqual(JSON.parse(s.getItem(SETTINGS_KEY)), { sound: false, vibrate: true, theme: 'light', seen: '1.1.0' });
+  assert.deepEqual(JSON.parse(s.getItem(SETTINGS_KEY)), { sound: false, vibrate: true, theme: 'light', seen: '1.1.0', coach: true });
+  // v1.2: 지도 모드 켜고 끄기도 기억한다
+  assert.equal(cleanSettings({ coach: false }).coach, false);
+  assert.equal(cleanSettings({ coach: 'no' }).coach, true);
   assert.deepEqual(cleanSettings({ sound: 'yes', theme: 'neon' }), DEFAULT_SETTINGS);
   s.setItem(SETTINGS_KEY, '{망가짐');
   assert.deepEqual(loadSettings(s), DEFAULT_SETTINGS);
@@ -168,7 +171,8 @@ test('새로 생긴 것(v1.1.1): 마지막으로 본 판 뒤의 항목만 보여
   assert.equal(compareVersion('1.1.1', '1.1.0') > 0, true);
   assert.equal(compareVersion('1.10.0', '1.9.0') > 0, true);
   assert.equal(compareVersion('1.1.0', '1.1.0'), 0);
-  assert.deepEqual(newsSince('1.1.0').map((n) => n.v), ['1.1.1']);
+  assert.deepEqual(newsSince('1.1.0').map((n) => n.v), ['1.2.0', '1.2.0', '1.1.1']);
+  assert.deepEqual(newsSince('1.1.1').map((n) => n.v), ['1.2.0', '1.2.0']);
   assert.equal(newsSince('').length, WHATS_NEW.length);
   assert.equal(newsSince(APP_VERSION).length, 0);
   assert.equal(shouldShowNews({ seen: '1.1.0' }, true), true);

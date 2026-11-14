@@ -625,6 +625,70 @@ dialog::backdrop { background: rgba(4, 8, 12, 0.6); }
 :root[data-theme="light"] .boardwrap { box-shadow: 0 10px 24px rgba(60, 40, 10, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.12); }
 :root[data-theme="light"] .node.mission.done .node-dot { background: #6fd6a9; border-color: #1b7a54; }
 :root[data-theme="light"] .segs i.done { background: #1b7a54; }
+/* ---- 지도 모드와 복기 (v1.2) ---- */
+.coach-toggle { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 16px 6px 6px; border-radius: 999px; border: 1px solid var(--stroke-strong); background: var(--tint); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.switch .knob { position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--star-off); transition: background-color 0.2s var(--ease); flex-shrink: 0; }
+.switch .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.2s var(--spring); }
+.switch[aria-checked="true"] .knob { background: var(--jade); }
+.switch[aria-checked="true"] .knob::after { transform: translateX(18px); }
+.coach-sub { font-size: 14px; color: var(--sub); }
+.coach-card, .review { margin-top: 14px; padding: 16px 18px; }
+.coach-card[hidden], .review[hidden] { display: none; }
+.coach-for { margin: 0 0 6px; font-size: 13px; color: var(--sub); }
+.coach-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.coach-head strong { font-size: 17px; }
+.grade { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; background: var(--tint-2); color: var(--ink); }
+.grade.g-best { background: #1e8a5a; color: #fff; }
+.grade.g-good { background: var(--jade-soft); color: var(--jade-text); }
+.grade.g-ok { background: var(--tint-2); color: var(--ink); }
+.grade.g-inacc { background: rgba(243, 196, 79, 0.2); color: var(--gold-text); }
+.grade.g-mistake { background: #d6402f; color: #fff; }
+.grade.g-hint, .grade.g-wait { background: var(--tint-2); color: var(--sub); }
+.coach-list { margin: 10px 0 0; padding-left: 20px; }
+.coach-list li { margin: 3px 0; }
+.coach-list.good li::marker { color: var(--jade-text); }
+.coach-list.why li::marker { color: var(--coral-text); }
+.coach-better { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--jade-soft); }
+.coach-better.soft { background: var(--tint); }
+.coach-better b { color: var(--jade-text); }
+.ring-ico { flex-shrink: 0; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; border: 3px solid #1e8a5a; background: rgba(30, 138, 90, 0.18); }
+.coach-tip { margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--tint); border-left: 4px solid var(--gold); }
+.coach-tip b { display: block; font-size: 13px; color: var(--gold-text); margin-bottom: 2px; }
+.coach-lesson { margin: 8px 0 0; font-size: 15px; }
+.coach-lesson a { color: var(--gold-text); font-weight: 700; }
+.coach-lead { margin: 8px 0 0; font-size: 14px; color: var(--sub); }
+.coach-foot { margin: 10px 0 0; font-size: 12.5px; color: var(--sub); }
+.coach-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.coach-actions .ghost-btn { min-height: 44px; padding: 0 16px; }
+.hint-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.hint-list li { display: flex; align-items: center; gap: 8px; }
+.hint-letter { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #fffdf6; color: #2a2520; font-weight: 800; font-size: 14px; border: 1px solid var(--wood-edge); flex-shrink: 0; }
+.review h2 { font-size: 20px; margin: 8px 0; }
+.review h3 { font-size: 16px; margin: 16px 0 6px; }
+.progress { height: 10px; border-radius: 999px; background: var(--tint-2); overflow: hidden; margin-top: 10px; }
+.progress i { display: block; height: 100%; background: var(--jade); transition: width 0.3s var(--ease); }
+.review-nav { display: flex; gap: 8px; }
+.review-nav button { flex: 1; min-height: 44px; border-radius: 999px; border: 1px solid var(--stroke-strong); background: var(--tint); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.review-nav button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.review-nav button:disabled { opacity: 0.38; cursor: default; }
+.timeline { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0 4px; }
+.tdot { width: 18px; height: 18px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: var(--tint-2); }
+.tdot.g-best { background: #1e8a5a; }
+.tdot.g-good { background: var(--jade); }
+.tdot.g-ok { background: var(--star-off); }
+.tdot.g-inacc { background: var(--gold); }
+.tdot.g-mistake { background: #d6402f; }
+.tdot.now { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rv-score b { font-size: 22px; color: var(--gold-text); }
+.grade-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.worst { margin: 0; padding-left: 22px; }
+.worst li { margin: 6px 0; }
+.habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.habits li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--tint); }
+.habits li span { font-size: 15px; }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--gold-text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
+.rv-body { margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -1044,6 +1108,996 @@ function chooseGameMove(state, options = {}) {
   return chooseMove(state, { ...options, allow, noSelfAtari: true });
 }
 
+// ---- src/coach.mjs ----
+// 지도 엔진: 몬테카를로 트리 탐색(MCTS + RAVE)으로 형세와 좋은 수를 어림한다.
+// - 9줄 판에 맞춘 세기다. 프로 엔진이 아니라 "입문자의 큰 실수와 놓친 기회"를 잡아 주는 것이 목표다.
+// - 판정은 이 파일, 말로 풀어 주는 일은 coach-explain.mjs 가 한다.
+// - 빠르게 돌리려고 rules.mjs 와 따로 테두리 칸이 있는 판(가짜 활로 방식)을 쓴다. 규칙은 같다(따냄, 자충 금지, 패).
+
+const EDGE = 3; // 판 바깥 칸
+const PASS_MOVE = 0; // 빠른 판의 0번 칸은 늘 바깥이라 "쉬기"로 쓴다
+
+// ---- 빠른 판 ----
+
+function fbCreate(size, komi) {
+  const W = size + 2;
+  const cells = W * W;
+  const fb = {
+    size, W, cells, komi,
+    color: new Uint8Array(cells).fill(EDGE),
+    head: new Int16Array(cells),
+    next: new Int16Array(cells),
+    pl: new Int16Array(cells), // 덩어리 대표 칸에 둔 가짜 활로 수(맞닿은 빈 칸 쌍의 수)
+    ls: new Int32Array(cells), // 가짜 활로 자리 번호의 합
+    lq: new Int32Array(cells), // 가짜 활로 자리 번호 제곱의 합 (단수 판별용)
+    gs: new Int16Array(cells), // 덩어리 돌 수
+    empties: new Int16Array(cells),
+    epos: new Int16Array(cells),
+    ne: 0,
+    ko: -1,
+    turn: BLACK,
+    passes: 0,
+    moves: 0,
+    last: -1,
+  };
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const p = (y + 1) * W + x + 1;
+      fb.color[p] = EMPTY;
+      fb.epos[p] = fb.ne;
+      fb.empties[fb.ne++] = p;
+    }
+  }
+  return fb;
+}
+
+function fbClone(fb) {
+  return {
+    ...fb,
+    color: fb.color.slice(), head: fb.head.slice(), next: fb.next.slice(),
+    pl: fb.pl.slice(), ls: fb.ls.slice(), lq: fb.lq.slice(), gs: fb.gs.slice(),
+    empties: fb.empties.slice(), epos: fb.epos.slice(),
+  };
+}
+
+const fbToIdx = (fb, p) => ((p / fb.W) | 0) * fb.size - fb.size + (p % fb.W) - 1;
+const fbFromIdx = (fb, idx) => (((idx / fb.size) | 0) + 1) * fb.W + (idx % fb.size) + 1;
+
+function fbAddEmpty(fb, p) { fb.epos[p] = fb.ne; fb.empties[fb.ne++] = p; }
+function fbRemoveEmpty(fb, p) {
+  const i = fb.epos[p];
+  const last = fb.empties[--fb.ne];
+  fb.empties[i] = last;
+  fb.epos[last] = i;
+}
+
+function fbAtari(fb, h) {
+  const n = fb.pl[h];
+  return n > 0 && n * fb.lq[h] === fb.ls[h] * fb.ls[h];
+}
+function fbAtariLib(fb, h) { return fb.ls[h] / fb.pl[h]; }
+
+function fbLegal(fb, p, c) {
+  const { color, head, W } = fb;
+  if (color[p] !== EMPTY || p === fb.ko) return false;
+  const opp = 3 - c;
+  const ns = [p - W, p - 1, p + 1, p + W];
+  for (const n of ns) if (color[n] === EMPTY) return true;
+  for (const n of ns) {
+    const cn = color[n];
+    if (cn === c && !fbAtari(fb, head[n])) return true; // 내 덩어리에 다른 활로가 있다
+    if (cn === opp && fbAtari(fb, head[n])) return true; // 상대를 따낸다
+  }
+  return false;
+}
+
+// c 의 진짜 눈처럼 보이는 자리 (메우면 손해). 바깥 쪽 대각선까지 본다.
+function fbEyeish(fb, p, c) {
+  const { color, W } = fb;
+  for (const n of [p - W, p - 1, p + 1, p + W]) {
+    if (color[n] !== c && color[n] !== EDGE) return false;
+  }
+  let bad = 0;
+  let edge = 0;
+  for (const d of [p - W - 1, p - W + 1, p + W - 1, p + W + 1]) {
+    const cd = color[d];
+    if (cd === EDGE) edge = 1;
+    else if (cd === 3 - c) bad++;
+  }
+  return bad + edge < 2;
+}
+
+const stampArr = { arr: new Int32Array(0), n: 0 };
+function freshStamp(cells) {
+  if (stampArr.arr.length < cells) stampArr.arr = new Int32Array(cells);
+  stampArr.n++;
+  if (stampArr.n > 2e9) { stampArr.arr.fill(0); stampArr.n = 1; }
+  return stampArr.n;
+}
+
+// p 에 c 를 두면 만들어질 덩어리가 단수이고 따내는 것도 없으면 그 돌 수를, 아니면 0을 돌려준다.
+function fbSelfAtari(fb, p, c) {
+  const { color, head, next, W } = fb;
+  const opp = 3 - c;
+  const ns = [p - W, p - 1, p + 1, p + W];
+  let empty = 0;
+  for (const n of ns) {
+    if (color[n] === EMPTY) empty++;
+    else if (color[n] === opp && fbAtari(fb, head[n])) return 0; // 따낸다
+  }
+  if (empty >= 2) return 0;
+  const st = freshStamp(fb.cells);
+  const mark = stampArr.arr;
+  mark[p] = st;
+  let libs = 0;
+  let size = 1;
+  for (const n of ns) {
+    if (color[n] === EMPTY && mark[n] !== st) { mark[n] = st; libs++; }
+  }
+  const seenHeads = [];
+  for (const n of ns) {
+    if (color[n] !== c) continue;
+    const h = head[n];
+    if (seenHeads.includes(h)) continue;
+    seenHeads.push(h);
+    size += fb.gs[h];
+    let s = h;
+    do {
+      for (const m of [s - W, s - 1, s + 1, s + W]) {
+        if (color[m] === EMPTY && mark[m] !== st) { mark[m] = st; libs++; if (libs >= 2) return 0; }
+      }
+      s = next[s];
+    } while (s !== h);
+  }
+  return libs <= 1 ? size : 0;
+}
+
+function fbAddLib(fb, h, p) { fb.pl[h]++; fb.ls[h] += p; fb.lq[h] += p * p; }
+function fbSubLib(fb, h, p) { fb.pl[h]--; fb.ls[h] -= p; fb.lq[h] -= p * p; }
+
+function fbMerge(fb, a, b) {
+  const { head, next, gs } = fb;
+  if (gs[a] < gs[b]) { const t = a; a = b; b = t; }
+  let s = b;
+  do { head[s] = a; s = next[s]; } while (s !== b);
+  const t = next[a];
+  next[a] = next[b];
+  next[b] = t;
+  fb.pl[a] += fb.pl[b];
+  fb.ls[a] += fb.ls[b];
+  fb.lq[a] += fb.lq[b];
+  gs[a] += gs[b];
+  return a;
+}
+
+function fbRemoveGroup(fb, h) {
+  const { color, head, next, W } = fb;
+  const stones = [];
+  let s = h;
+  do { stones.push(s); s = next[s]; } while (s !== h);
+  for (const st of stones) { color[st] = EMPTY; fbAddEmpty(fb, st); }
+  for (const st of stones) {
+    for (const n of [st - W, st - 1, st + 1, st + W]) {
+      const cn = color[n];
+      if (cn === BLACK || cn === WHITE) fbAddLib(fb, head[n], st);
+    }
+  }
+  return stones;
+}
+
+// 둘 수 있는지 미리 확인했다고 보고 둔다. 따낸 돌 수를 돌려준다.
+function fbPlay(fb, p) {
+  const c = fb.turn;
+  fb.moves++;
+  if (p === PASS_MOVE) {
+    fb.passes++;
+    fb.ko = -1;
+    fb.turn = 3 - c;
+    fb.last = PASS_MOVE;
+    return 0;
+  }
+  const { color, head, W } = fb;
+  const opp = 3 - c;
+  fbRemoveEmpty(fb, p);
+  color[p] = c;
+  head[p] = p;
+  fb.next[p] = p;
+  fb.pl[p] = 0; fb.ls[p] = 0; fb.lq[p] = 0; fb.gs[p] = 1;
+  const ns = [p - W, p - 1, p + 1, p + W];
+  for (const n of ns) {
+    const cn = color[n];
+    if (cn === EMPTY) fbAddLib(fb, p, n);
+    else if (cn !== EDGE) fbSubLib(fb, head[n], p);
+  }
+  let h = p;
+  for (const n of ns) {
+    if (color[n] === c && head[n] !== h) h = fbMerge(fb, h, head[n]);
+  }
+  let captured = 0;
+  let capAt = -1;
+  for (const n of ns) {
+    if (color[n] === opp && fb.pl[head[n]] === 0) {
+      const gone = fbRemoveGroup(fb, head[n]);
+      captured += gone.length;
+      capAt = gone[0];
+    }
+  }
+  h = head[p];
+  fb.ko = captured === 1 && fb.gs[h] === 1 && fb.pl[h] === 1 ? capAt : -1;
+  fb.passes = 0;
+  fb.turn = opp;
+  fb.last = p;
+  return captured;
+}
+
+// 판이 다 찼을 때의 집 계산 (돌 + 둘러싼 빈 칸). 흑 기준 점수 차와 칸별 주인을 돌려준다.
+function fbScore(fb, own) {
+  const { color, W, size } = fb;
+  let b = 0;
+  let w = 0;
+  for (let y = 1; y <= size; y++) {
+    for (let x = 1; x <= size; x++) {
+      const p = y * W + x;
+      let c = color[p];
+      if (c === EMPTY) {
+        let seen = 0;
+        for (const n of [p - W, p - 1, p + 1, p + W]) {
+          const cn = color[n];
+          if (cn === BLACK || cn === WHITE) seen |= cn;
+        }
+        c = seen === BLACK || seen === WHITE ? seen : EMPTY;
+      }
+      if (c === BLACK) b++;
+      else if (c === WHITE) w++;
+      if (own) own[p] = c === BLACK ? 1 : c === WHITE ? -1 : 0;
+    }
+  }
+  return b - w - fb.komi;
+}
+
+// 끝까지 두어 보기 (빠른 규칙: 따내기·단수 피하기·눈 메우지 않기 + 무작위)
+function fbPlayout(fb, rng, seq) {
+  const limit = fb.size * fb.size * 3;
+  const { W } = fb;
+  while (fb.passes < 2 && fb.moves < limit) {
+    const c = fb.turn;
+    let move = -1;
+    const last = fb.last;
+    if (last > 0 && rng() < 0.9) {
+      const { color, head } = fb;
+      // 1) 방금 둔 돌 둘레에서 단수 된 상대 덩어리를 따낸다, 2) 단수 된 내 덩어리를 달아나게 한다
+      for (const n of [last, last - W, last - 1, last + 1, last + W]) {
+        const cn = color[n];
+        if ((cn !== BLACK && cn !== WHITE) || !fbAtari(fb, head[n])) continue;
+        const lib = fbAtariLib(fb, head[n]);
+        if (!fbLegal(fb, lib, c)) continue;
+        if (cn === 3 - c) { move = lib; break; }
+        if (cn === c && fbSelfAtari(fb, lib, c) === 0) { move = lib; break; }
+      }
+    }
+    if (move < 0) {
+      let k = fb.ne;
+      while (k > 0) {
+        const r = (rng() * k) | 0;
+        const p = fb.empties[r];
+        if (fbLegal(fb, p, c) && !fbEyeish(fb, p, c)) {
+          // 스스로 단수: 큰 덩어리는 두지 않고, 2~3점은 가끔만 둔다(옥집 안에 들어가 죽이는 수 때문에)
+          const sa = fbSelfAtari(fb, p, c);
+          if (sa < 2 || (sa <= 3 && rng() < 0.3)) { move = p; break; }
+        }
+        // 못 두는 자리는 뒤로 보낸다
+        k--;
+        const q = fb.empties[k];
+        fb.empties[r] = q; fb.epos[q] = r;
+        fb.empties[k] = p; fb.epos[p] = k;
+      }
+    }
+    if (move < 0) move = PASS_MOVE;
+    if (seq) { seq.push(move); seq.push(c); }
+    fbPlay(fb, move);
+  }
+}
+
+// ---- 탐색 나무 ----
+
+const TUNE = { priorN: 8, raveK: 1000, explore: 0.1, winW: 0.25, scale: 12 };
+
+function coachUtility(scoreBlack, color) {
+  const win = scoreBlack > 0 ? 1 : 0;
+  const u = TUNE.winW * win + (1 - TUNE.winW) * (0.5 + 0.5 * Math.tanh(scoreBlack / TUNE.scale));
+  return color === BLACK ? u : 1 - u;
+}
+
+// 처음 펼칠 때 수마다 주는 "미리 짐작" (몇 판 두어 본 셈 치기)
+function coachPrior(fb, p, c) {
+  if (p === PASS_MOVE) return 0.2;
+  const { color, head, W, size } = fb;
+  const opp = 3 - c;
+  let v = 0.5;
+  let touch = 0;
+  for (const n of [p - W, p - 1, p + 1, p + W]) {
+    const cn = color[n];
+    if (cn === opp) {
+      touch++;
+      if (fbAtari(fb, head[n])) v += 0.3 + Math.min(0.2, fb.gs[head[n]] * 0.05); // 따내기
+      else if (fb.pl[head[n]] <= 3) v += 0.05;
+    } else if (cn === c) {
+      touch++;
+      if (fbAtari(fb, head[n])) v += 0.25; // 달아나기
+    }
+  }
+  const sa = fbSelfAtari(fb, p, c);
+  if (sa >= 2) v -= 0.35;
+  else if (sa === 1) v -= 0.1;
+  const x = (p % W) - 1;
+  const y = ((p / W) | 0) - 1;
+  const line = Math.min(x, y, size - 1 - x, size - 1 - y) + 1;
+  const stones = size * size - fb.ne;
+  if (stones < size + 2) {
+    if (line === 1) v -= 0.25;
+    else if (line === 2) v -= 0.1;
+    else if (line === 3 || line === 4) v += 0.1;
+  } else if (line === 1 && touch === 0) v -= 0.15;
+  return Math.max(0.02, Math.min(0.98, v));
+}
+
+
+
+function coachNode(move, color) {
+  // color: 이 수를 둔 사람. 통계는 그 사람 입장의 값이다.
+  return { move, color, n: 0, w: 0, an: 0, aw: 0, kids: null, score: 0, own: null, pn: 0, pw: 0 };
+}
+
+function coachExpand(node, fb) {
+  const c = fb.turn;
+  const kids = [];
+  for (let i = 0; i < fb.ne; i++) {
+    const p = fb.empties[i];
+    if (!fbLegal(fb, p, c) || fbEyeish(fb, p, c)) continue;
+    const k = coachNode(p, c);
+    const v = coachPrior(fb, p, c);
+    k.pn = TUNE.priorN; k.pw = TUNE.priorN * v;
+    kids.push(k);
+  }
+  const ps = coachNode(PASS_MOVE, c);
+  const v = kids.length === 0 ? 0.9 : fb.passes > 0 ? 0.35 : 0.1;
+  ps.pn = TUNE.priorN; ps.pw = TUNE.priorN * v;
+  kids.push(ps);
+  node.kids = kids;
+}
+
+function coachPick(node, focus, focusShare, isRoot) {
+  const kids = node.kids;
+  if (isRoot && focus) {
+    const fk = kids.find((k) => k.move === focus);
+    if (fk && fk.n < focusShare * (node.n + 1)) return fk;
+  }
+  const logN = Math.log(node.n + 1);
+  let best = null;
+  let top = -Infinity;
+  for (const k of kids) {
+    const n = k.n + k.pn;
+    const q = (k.w + k.pw) / n;
+    let v = q;
+    if (k.an > 0) {
+      const beta = Math.sqrt(TUNE.raveK / (3 * n + TUNE.raveK));
+      v = (1 - beta) * q + beta * (k.aw / k.an);
+    }
+    v += TUNE.explore * Math.sqrt(logN / (n + 1));
+    if (v > top) { top = v; best = k; }
+  }
+  return best;
+}
+
+// 한 번 내려가 두어 보고 결과를 위로 올린다.
+function coachSimulate(root, rootFb, ctx) {
+  const fb = fbClone(rootFb);
+  const path = [root];
+  const seq = [];
+  let node = root;
+  while (node.kids && fb.passes < 2) {
+    const k = coachPick(node, ctx.focus, ctx.focusShare, node === root);
+    if (k.move !== PASS_MOVE && !fbLegal(fb, k.move, fb.turn)) {
+      // 패 때문에 막힌 자리 같은 경우: 이 판에서는 쉬는 셈 친다
+      k.n++; k.w += 0;
+      break;
+    }
+    seq.push(k.move, fb.turn);
+    fbPlay(fb, k.move);
+    path.push(k);
+    node = k;
+    if (k.n + 1 >= ctx.expandAt && !k.kids && fb.passes < 2) { coachExpand(k, fb); break; }
+  }
+  const depth = path.length - 1;
+  fbPlayout(fb, ctx.rng, seq);
+  const own = ctx.own;
+  const score = fbScore(fb, own);
+
+  // 값 올리기
+  for (let i = 1; i < path.length; i++) {
+    const k = path[i];
+    k.n++;
+    k.w += coachUtility(score, k.color);
+    k.score += score;
+  }
+  root.n++;
+  root.score += score;
+  root.score2 += score * score;
+  // 첫째 수(뿌리의 자식)에는 칸별 주인도 쌓는다
+  if (path.length > 1) {
+    const first = path[1];
+    if (!first.own) first.own = new Float32Array(fb.cells);
+    for (let p = 0; p < fb.cells; p++) first.own[p] += own[p];
+  }
+  for (let p = 0; p < fb.cells; p++) ctx.rootOwn[p] += own[p];
+
+  // RAVE: 이 판에서 나중에 그 사람이 처음 둔 자리를 같이 쳐 준다
+  const first = ctx.firstColor;
+  first.fill(0);
+  for (let k = seq.length - 2; k >= 0; k -= 2) {
+    const mv = seq[k];
+    if (mv !== PASS_MOVE) first[mv] = seq[k + 1];
+    const d = k / 2;
+    if (d <= depth) {
+      const nd = path[d];
+      if (nd.kids) {
+        for (const ch of nd.kids) {
+          if (ch.move !== PASS_MOVE && first[ch.move] === ch.color) {
+            ch.an++;
+            ch.aw += coachUtility(score, ch.color);
+          }
+        }
+      }
+    }
+  }
+}
+
+function makeRng(seed) {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s ^= s << 13; s >>>= 0;
+    s ^= s >>> 17;
+    s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+}
+
+function coachSetup(state, options) {
+  const fb = fbCreate(state.size, state.komi ?? 6.5);
+  // 돌을 하나씩 놓아 덩어리 정보를 만든다 (따냄은 없는 판이라고 본다)
+  for (let i = 0; i < state.board.length; i++) {
+    const c = state.board[i];
+    if (c === EMPTY) continue;
+    fb.turn = c;
+    fbPlay(fb, fbFromIdx(fb, i));
+  }
+  fb.turn = state.turn;
+  fb.ko = state.ko >= 0 ? fbFromIdx(fb, state.ko) : -1;
+  fb.passes = state.passes || 0;
+  fb.moves = 0;
+  fb.last = state.lastMove >= 0 ? fbFromIdx(fb, state.lastMove) : -1;
+  const root = coachNode(-1, 3 - state.turn);
+  root.score2 = 0;
+  coachExpand(root, fb);
+  const focus = options.focus === undefined || options.focus === null ? null
+    : options.focus < 0 ? PASS_MOVE : fbFromIdx(fb, options.focus);
+  if (focus !== null && !root.kids.some((k) => k.move === focus) && (focus === PASS_MOVE || fbLegal(fb, focus, fb.turn))) {
+    // 눈 메우기처럼 보통은 빼는 수라도, 사람이 둔 수라면 따로 평가한다
+    const k = coachNode(focus, fb.turn);
+    k.pn = TUNE.priorN; k.pw = TUNE.priorN * 0.3;
+    root.kids.push(k);
+  }
+  return {
+    fb, root,
+    ctx: {
+      rng: options.rng || makeRng(options.seed ?? (Date.now() & 0xffffff)),
+      focus, focusShare: options.focusShare ?? 0.2,
+      expandAt: options.expandAt ?? 3,
+      own: new Int8Array(fb.cells),
+      rootOwn: new Float64Array(fb.cells),
+      firstColor: new Uint8Array(fb.cells),
+    },
+  };
+}
+
+function coachReport(state, run) {
+  const { fb, root, ctx } = run;
+  const me = state.turn;
+  const sign = me === BLACK ? 1 : -1;
+  const cells = state.size * state.size;
+  const ownership = new Array(cells);
+  for (let i = 0; i < cells; i++) ownership[i] = root.n ? ctx.rootOwn[fbFromIdx(fb, i)] / root.n : 0;
+  const moves = root.kids
+    .filter((k) => k.n > 0)
+    .map((k) => {
+      const own = new Array(cells);
+      for (let i = 0; i < cells; i++) own[i] = k.own ? k.own[fbFromIdx(fb, i)] / k.n : 0;
+      return {
+        move: k.move === PASS_MOVE ? -1 : fbToIdx(fb, k.move),
+        visits: k.n,
+        value: k.w / k.n,
+        lead: (sign * k.score) / k.n, // 이 수를 둔 쪽이 몇 집 앞서는지 (어림)
+        ownership: own, // +1 흑 집, -1 백 집
+      };
+    })
+    .sort((a, b) => b.visits - a.visits);
+  return {
+    toPlay: me,
+    playouts: root.n,
+    lead: root.n ? (sign * root.score) / root.n : 0,
+    // 어림의 흔들림(표준오차). 두 수를 견줄 때 이보다 작은 차이는 믿지 않는다
+    leadError: root.n > 1 ? Math.sqrt(Math.max(0, root.score2 / root.n - (root.score / root.n) ** 2) / root.n) : 99,
+    value: moves.length ? moves[0].value : 0.5,
+    ownership,
+    moves,
+  };
+}
+
+// 수 읽기 (한 번에 끝까지). 테스트와 작은 판에 쓴다.
+// options: playouts(기본 3000), focus(꼭 평가할 자리, -1은 쉬기), seed
+function analyzePosition(state, options = {}) {
+  const run = coachSetup(state, options);
+  const total = options.playouts ?? 3000;
+  for (let i = 0; i < total; i++) coachSimulate(run.root, run.fb, run.ctx);
+  return coachReport(state, run);
+}
+
+// 화면이 멈추지 않게 조금씩 나눠서 읽는다. 끝나면 결과를 돌려준다.
+// options: playouts, timeMs(최대 시간), onProgress(0~1), signal({ cancelled })
+async function analyzePositionAsync(state, options = {}) {
+  const run = coachSetup(state, options);
+  const total = options.playouts ?? 3000;
+  const timeMs = options.timeMs ?? 4000;
+  const sliceMs = options.sliceMs ?? 24;
+  const start = Date.now();
+  let done = 0;
+  while (done < total && Date.now() - start < timeMs) {
+    const t0 = Date.now();
+    while (done < total && Date.now() - t0 < sliceMs) {
+      coachSimulate(run.root, run.fb, run.ctx);
+      done++;
+    }
+    if (options.onProgress) options.onProgress(done / total);
+    if (options.signal && options.signal.cancelled) break;
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  return coachReport(state, run);
+}
+
+// 결과에서 어떤 수의 정보를 찾는다 (없으면 null)
+function moveInfo(report, move) {
+  return report.moves.find((m) => m.move === move) || null;
+}
+
+// 가장 좋은 수: 많이 읽은 수 중에서 고른다
+function bestMoves(report, count = 3) {
+  const top = report.moves[0];
+  if (!top) return [];
+  const minVisits = Math.max(8, top.visits * 0.08);
+  return report.moves.filter((m) => m.visits >= minVisits).slice(0, count);
+}
+
+// 테스트용 내부 공개
+const __coachInternals = { fbCreate, fbPlay, fbLegal, fbSelfAtari, fbEyeish, fbScore, fbPlayout, fbFromIdx, fbToIdx, makeRng, PASS_MOVE, TUNE };
+
+// ---- src/coach-explain.mjs ----
+// 지도 말풀이: 지도 엔진(coach.mjs)의 결과와 규칙 엔진으로 "왜 이 수가 좋고 나쁜지"를 쉬운 말로 만든다.
+// - 손해 집 수는 엔진의 어림이다. 숫자보다 이유와 원칙을 먼저 보여 준다.
+
+const COACH_GRADES = {
+  best: { text: '최선의 수', short: '최선' },
+  good: { text: '좋은 수', short: '좋음' },
+  ok: { text: '괜찮은 수', short: '보통' },
+  inacc: { text: '아쉬운 수', short: '아쉬움' },
+  mistake: { text: '큰 실수', short: '실수' },
+};
+
+// 여러 이유가 겹치면 앞의 것을 먼저 말한다
+const COACH_PRIORITY = ['capture', 'save', 'kill', 'weak', 'selfAtari', 'ladder', 'fillOwn', 'cut', 'connect', 'opening', 'big', 'settled', 'pass', 'general'];
+
+// 원칙(전문가는 이렇게 생각해요)과 다시 볼 차시
+const COACH_TOPICS = {
+  capture: { tip: '따낼 수 있는 돌은 먼저 따내요. 특히 내 돌을 끊고 있는 돌은 가치가 커요.', lesson: 'L04', name: '따낼 기회 놓침' },
+  save: { tip: '상대가 단수를 치면 먼저 "살릴 수 있나, 버려도 되나"를 따져 봐요.', lesson: 'L06', name: '단수 된 돌 못 살림' },
+  ladder: { tip: '축에 걸린 돌은 달아날수록 더 많이 잡혀요. 축인지 먼저 읽고, 안 되면 버리고 다른 큰 곳에 두어요.', lesson: 'L17', name: '축으로 달아나기' },
+  selfAtari: { tip: '두기 전에 "두고 나면 내 돌 활로가 몇 개?"를 세어 봐요. 하나면 바로 잡혀요.', lesson: 'L05', name: '스스로 단수' },
+  weak: { tip: '약한 돌부터 돌봐요. 돌이 살려면 두 집이 필요해요. 상대가 노리기 전에 먼저 지켜요.', lesson: 'L12', name: '약한 돌 못 지킴' },
+  kill: { tip: '상대의 약한 돌은 눈을 만들 급소를 먼저 차지하면 잡을 수 있어요.', lesson: 'L14', name: '잡을 기회 놓침' },
+  fillOwn: { tip: '내 집 안은 비워 두어요. 내 집에 두면 내 집이 줄어들어요.', lesson: 'L10', name: '내 집 메우기' },
+  settled: { tip: '이미 주인이 정해진 곳보다 아직 주인이 없는 곳이 커요.', lesson: 'L23', name: '정해진 곳에 두기' },
+  opening: { tip: '초반에는 귀 → 변 → 중앙 순서로, 3선과 4선에 두어요. 1·2선은 집이 작아요.', lesson: 'L22', name: '초반에 너무 낮게' },
+  big: { tip: '급한 싸움이 없으면 가장 넓게 비어 있는 곳을 먼저 차지해요.', lesson: 'L23', name: '큰 자리 놓침' },
+  cut: { tip: '상대 돌이 끊어지는 자리는 나에게 기회예요. 끊긴 돌은 따로따로 살아야 해서 약해져요.', lesson: 'L07', name: '끊을 기회 놓침' },
+  connect: { tip: '끊길 것 같은 내 돌은 이어 두면 하나로 튼튼해져요.', lesson: 'L06', name: '잇기 놓침' },
+  pass: { tip: '더 둘 곳이 없으면 한 수 쉬어도 돼요. 내 집 안에 두면 오히려 손해예요.', lesson: 'L11', name: '둘 곳 없음' },
+  general: { tip: '두기 전에 ① 내 돌이 단수인가 ② 상대 돌을 따낼 수 있나 ③ 가장 넓은 곳은 어디인가를 차례로 살펴봐요.', lesson: 'L23', name: '형세 판단' },
+};
+
+function explainStonesAround(board, size, idx, dist) {
+  const x0 = idx % size;
+  const y0 = (idx - x0) / size;
+  for (let y = Math.max(0, y0 - dist); y <= Math.min(size - 1, y0 + dist); y++) {
+    for (let x = Math.max(0, x0 - dist); x <= Math.min(size - 1, x0 + dist); x++) {
+      if (Math.abs(x - x0) + Math.abs(y - y0) > dist) continue;
+      const i = y * size + x;
+      if (i !== idx && board[i] !== EMPTY) return true;
+    }
+  }
+  return false;
+}
+
+// 축 읽기: 단수 다음에 늘 2활로로 달아나는 덩어리를, 공격하는 쪽(state.turn)이 끝내 잡는지 본다.
+function ladderWorks(state, stone, depth = 0) {
+  if (depth > 40) return false;
+  const g = groupAt(state.board, state.size, stone);
+  if (g.color === EMPTY) return true;
+  if (g.liberties.length === 1) return true; // 지금 따낼 수 있다
+  if (g.liberties.length > 2) return false;
+  for (const lib of g.liberties) {
+    const a = play(state, lib); // 공격: 단수 치기
+    if (!a.ok) continue;
+    const g2 = groupAt(a.state.board, state.size, stone);
+    if (g2.color === EMPTY) return true;
+    if (g2.liberties.length !== 1) continue;
+    // 수비: 단수 된 공격 돌을 따내거나 달아난다
+    let escaped = false;
+    const tries = [g2.liberties[0]];
+    for (const s of g2.stones) {
+      for (const n of neighbors(state.size, s)) {
+        if (a.state.board[n] === a.state.turn || a.state.board[n] === EMPTY) continue;
+        const ag = groupAt(a.state.board, state.size, n);
+        if (ag.liberties.length === 1 && !tries.includes(ag.liberties[0])) tries.push(ag.liberties[0]);
+      }
+    }
+    for (const t of tries) {
+      const d = play(a.state, t);
+      if (!d.ok) continue;
+      const g3 = groupAt(d.state.board, state.size, stone);
+      if (g3.color === EMPTY) continue;
+      if (g3.liberties.length >= 3) { escaped = true; break; }
+      if (g3.liberties.length === 2 && !ladderWorks(d.state, stone, depth + 1)) { escaped = true; break; }
+    }
+    if (!escaped) return true;
+  }
+  return false;
+}
+
+// 한 수가 판에서 하는 일 (규칙만 보고 안다)
+function moveFacts(state, move) {
+  const { size, board } = state;
+  const me = state.turn;
+  const foe = opponent(me);
+  const facts = { move, pass: move < 0, captured: 0, saved: 0, ataris: 0, selfAtari: 0, connects: false, cuts: false, line: 0, lonely: false, ladderDead: 0 };
+  if (move < 0) return facts;
+  const r = play(state, move);
+  if (!r.ok) return { ...facts, illegal: r.reason };
+  const after = r.state.board;
+  facts.captured = r.captured.length;
+  const x = move % size;
+  const y = (move - x) / size;
+  facts.line = Math.min(x, y, size - 1 - x, size - 1 - y) + 1;
+  facts.lonely = !explainStonesAround(board, size, move, 2);
+
+  const before = groupsInAtari(state);
+  for (const g of before) {
+    if (g.color !== me) continue;
+    const s = g.stones[0];
+    if (after[s] === me && groupAt(after, size, s).liberties.length >= 2) facts.saved += g.stones.length;
+  }
+  const own = groupAt(after, size, move);
+  if (own.liberties.length === 1 && facts.captured === 0) facts.selfAtari = own.stones.length;
+  // 달아났는데 축이라 결국 잡히는지
+  if (facts.saved > 0 && own.liberties.length === 2 && ladderWorks(r.state, move)) facts.ladderDead = own.stones.length;
+
+  const myHeads = new Set();
+  const foeHeads = new Set();
+  for (const n of neighbors(size, move)) {
+    if (board[n] === me) myHeads.add(groupAt(board, size, n).stones.sort((a, b) => a - b)[0]);
+    else if (board[n] === foe) {
+      const g = groupAt(board, size, n);
+      foeHeads.add(g.stones.sort((a, b) => a - b)[0]);
+      if (after[n] === foe && g.liberties.length > 1 && groupAt(after, size, n).liberties.length === 1) facts.ataris += g.stones.length;
+    }
+  }
+  facts.connects = myHeads.size >= 2;
+  facts.cuts = foeHeads.size >= 2 && facts.captured === 0;
+  return facts;
+}
+
+// 덩어리마다 "그 색이 살아 있을 정도"(+1 산다, -1 죽는다)를 어림으로 계산
+function explainGroupLife(state, ownership) {
+  const { size, board } = state;
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === EMPTY || seen.has(i)) continue;
+    const g = groupAt(board, size, i);
+    for (const s of g.stones) seen.add(s);
+    const sign = g.color === BLACK ? 1 : -1;
+    let sum = 0;
+    for (const s of g.stones) sum += ownership[s] * sign;
+    out.push({ color: g.color, stones: g.stones, life: sum / g.stones.length });
+  }
+  return out;
+}
+
+// 두 수를 비교했을 때 살고 죽는 것이 크게 바뀌는 덩어리 (가장 큰 것)
+function explainLifeSwing(state, mine, better) {
+  const me = state.turn;
+  const a = explainGroupLife(state, mine.ownership);
+  const b = explainGroupLife(state, better.ownership);
+  let myLoss = null;
+  let foeKill = null;
+  a.forEach((ga, k) => {
+    const gb = b[k];
+    if (ga.color === me && gb.life > 0.25 && ga.life < -0.25 && (!myLoss || ga.stones.length > myLoss.stones.length)) myLoss = ga;
+    if (ga.color !== me && gb.life < -0.25 && ga.life > 0.25 && (!foeKill || ga.stones.length > foeKill.stones.length)) foeKill = ga;
+  });
+  return { myLoss, foeKill };
+}
+
+// 초반: 판에 돌이 아직 적다 (9줄에서 12개 미만)
+function explainEarly(state) {
+  let n = 0;
+  for (const c of state.board) if (c !== EMPTY) n++;
+  return n < Math.round(state.size * state.size * 0.15);
+}
+
+function explainGrade(loss, isBest) {
+  if (isBest || loss < 1.5) return isBest ? 'best' : 'good';
+  if (loss < 4) return 'ok';
+  if (loss < 10) return 'inacc';
+  return 'mistake';
+}
+
+const lessonName = (id) => ({ L04: '따내기', L05: '단수', L06: '달아나기와 잇기', L07: '끊기', L10: '집', L11: '한 판의 끝', L12: '두 집이면 산다', L14: '급소', L17: '축', L22: '어디부터 둘까', L23: '한 판의 흐름' }[id] || '');
+
+// 짧은 이름 붙이기 (힌트에서 쓴다)
+function moveLabel(state, move, report) {
+  if (move < 0) return '한 수 쉬기';
+  const f = moveFacts(state, move);
+  if (f.captured) return '따내기 ' + f.captured + '점';
+  if (f.saved && !f.ladderDead) return '달아나기';
+  if (f.ataris) return '단수 치기';
+  if (f.cuts) return '끊기';
+  if (f.connects) return '잇기';
+  const info = report && moveInfo(report, move);
+  const alt = report && report.moves.find((m) => m.move !== move);
+  if (info && alt) {
+    // 다른 좋은 수와 비교해 살고 죽는 것이 바뀌면 그 이름을 붙인다
+    const sw = explainLifeSwing(state, alt, info);
+    if (sw.foeKill) return '상대 돌 잡기';
+    if (sw.myLoss) return '내 돌 살리기(급소)';
+  }
+  // 활로가 적은 덩어리 곁이면: 내 돌이면 지키기, 상대 돌이면 공격
+  let weakMine = 0;
+  let weakFoe = 0;
+  for (const n of neighbors(state.size, move)) {
+    const c = state.board[n];
+    if (c === EMPTY) continue;
+    const g = groupAt(state.board, state.size, n);
+    if (g.liberties.length <= 3) {
+      if (c === state.turn) weakMine = Math.max(weakMine, g.stones.length);
+      else weakFoe = Math.max(weakFoe, g.stones.length);
+    }
+  }
+  if (weakMine >= 2) return '내 돌 지키기';
+  if (weakFoe >= 2) return '상대 돌 공격';
+  if (explainEarly(state) && (f.line === 3 || f.line === 4)) return '큰 자리(' + f.line + '선)';
+  if (explainEarly(state) && move === (state.size * state.size - 1) / 2) return '가운데(천원)';
+  if (f.lonely) return '넓은 곳';
+  return '형세상 좋은 곳';
+}
+
+// 지도 한 마디: 내가 둔 수(move)를 엔진 결과(report, move 를 꼭 평가해 둔 것)와 비교한다.
+function coachMove(state, move, report, cmp) {
+  const size = state.size;
+  const coord = (m) => (m < 0 ? '쉬기' : toCoord(size, m));
+  // cmp 가 있으면(coachEvaluate) 두 수를 같은 만큼 따로 읽은 값으로 견준다. 없으면 한 나무 안의 값으로 견준다.
+  let best;
+  let mine;
+  let noise = 0;
+  if (cmp) {
+    best = cmp.bestMove === move ? null : { move: cmp.bestMove, lead: cmp.bestLead, value: 1, ownership: cmp.bestOwn };
+    mine = { move, lead: cmp.mineLead, value: 1, ownership: cmp.mineOwn };
+    noise = cmp.error || 0;
+  } else {
+    // 엔진이 고른 수: 내가 둔 수를 뺀 것 중 가장 많이 읽은 수 (내 수는 일부러 더 읽게 했으므로 따로 비교한다)
+    const others = report.moves.filter((m) => m.move !== move);
+    best = others[0] || null;
+    mine = moveInfo(report, move);
+  }
+  const out = {
+    move, coord: coord(move), grade: 'ok', gradeText: '', loss: 0, headline: '', why: [], better: null, tip: '', lesson: null, tags: [], good: [],
+  };
+  if (!mine) {
+    out.grade = 'ok';
+    out.gradeText = COACH_GRADES.ok.text;
+    out.headline = '이 수는 따로 읽어 보지 못했어요.';
+    return out;
+  }
+  const isBest = cmp ? cmp.bestMove === move : !best || (mine.value >= best.value && mine.lead >= best.lead - 0.5);
+  const loss = !best ? 0 : Math.max(0, best.lead - mine.lead - 1.5 * noise);
+  out.loss = Math.round(loss * 10) / 10;
+  out.grade = explainGrade(loss, isBest);
+  out.gradeText = COACH_GRADES[out.grade].text;
+
+  const f = moveFacts(state, move);
+  const swingVsBest = isBest ? { myLoss: null, foeKill: null } : explainLifeSwing(state, mine, best);
+
+  // 잘한 점
+  if (f.captured) out.good.push('상대 돌 ' + f.captured + '점을 따냈어요.');
+  if (f.saved && !f.ladderDead) out.good.push('단수 된 내 돌 ' + f.saved + '점을 살렸어요.');
+  if (f.ataris && !f.selfAtari) out.good.push('상대 돌을 단수로 몰았어요.');
+  if (f.cuts && !f.selfAtari) out.good.push('상대 돌을 끊었어요.');
+  if (f.connects && !f.selfAtari) out.good.push('내 돌을 이었어요.');
+
+  const tags = [];
+  if (out.grade === 'best' || out.grade === 'good') {
+    out.headline = out.grade === 'best' ? '최선의 수예요!' : '좋은 수예요!';
+    if (!out.good.length) {
+      if (explainEarly(state) && (f.line === 3 || f.line === 4)) out.good.push('초반에 ' + f.line + '선의 큰 자리를 차지했어요.');
+      else out.good.push('지금 판에서 가장 좋은 곳 가운데 하나예요.');
+    }
+    if (!isBest && best) out.better = { move: best.move, coord: coord(best.move), reasons: [], equal: true };
+    return out;
+  }
+
+  // 무엇이 아쉬운가 (내 수)
+  if (f.selfAtari) { tags.push('selfAtari'); out.why.push('두고 나니 내 돌 ' + f.selfAtari + '점이 스스로 단수가 됐어요. 상대가 바로 따낼 수 있어요.'); }
+  if (f.ladderDead) { tags.push('ladder'); out.why.push('이 돌은 축에 걸려 있어요. 달아나도 끝내 잡히고 잡히는 돌만 늘어나요.'); }
+  if (swingVsBest.myLoss) { tags.push('weak'); out.why.push('이대로면 내 돌 ' + swingVsBest.myLoss.stones.length + '점이 잡힐 가능성이 커요.'); }
+  const mineOwn = mine.ownership[move] * (state.turn === BLACK ? 1 : -1);
+  const beforeOwn = report.ownership[move] * (state.turn === BLACK ? 1 : -1);
+  if (!f.pass && !f.captured && !f.saved && beforeOwn > 0.8 && neighbors(size, move).every((n) => state.board[n] !== opponent(state.turn))) {
+    tags.push('fillOwn'); out.why.push('이미 내 집인 곳에 두었어요. 내 집이 한 집 줄어요.');
+  } else if (!f.pass && !f.captured && !f.saved && !f.ataris && Math.abs(beforeOwn) > 0.85 && !swingVsBest.myLoss) {
+    tags.push('settled'); out.why.push('이미 주인이 거의 정해진 곳이라 이 수의 효과가 작아요.');
+  }
+  if (!f.pass && mineOwn < -0.6 && !f.selfAtari && !tags.includes('fillOwn')) out.why.push('둔 돌이 상대 세력 안이라 살기 어려워요.');
+  if (f.pass) out.why.push('아직 둘 곳이 남았는데 한 수 쉬었어요. 쉬면 상대만 한 수 더 두는 셈이에요.');
+  if (!f.pass && explainEarly(state) && f.line <= 2 && !f.captured && !f.saved) { tags.push('opening'); out.why.push('초반에 ' + f.line + '선은 너무 낮아서 집이 작아요.'); }
+
+  // 더 나은 수
+  const bf = moveFacts(state, best.move);
+  const reasons = [];
+  if (best.move < 0) { tags.push('pass'); reasons.push('더 둘 곳이 거의 없어요. 이럴 땐 한 수 쉬는 게 나아요.'); }
+  if (bf.captured && !f.captured) { tags.push('capture'); reasons.push('상대 돌 ' + bf.captured + '점을 바로 따낼 수 있었어요.'); }
+  if (bf.saved && !f.saved && !bf.ladderDead) { tags.push('save'); reasons.push('단수 된 내 돌 ' + bf.saved + '점을 살릴 수 있었어요.'); }
+  if (swingVsBest.myLoss && !bf.saved) reasons.push('약한 내 돌 ' + swingVsBest.myLoss.stones.length + '점을 지킬 수 있었어요.');
+  if (swingVsBest.foeKill) { tags.push('kill'); reasons.push('상대 돌 ' + swingVsBest.foeKill.stones.length + '점을 잡을 수 있었어요.'); }
+  if (bf.cuts && !f.cuts && !reasons.length) { tags.push('cut'); reasons.push('상대 돌을 끊어서 약하게 만드는 자리예요.'); }
+  if (bf.connects && !f.connects && !reasons.length) { tags.push('connect'); reasons.push('내 돌을 이어서 튼튼하게 만드는 자리예요.'); }
+  if (bf.ataris && !reasons.length) reasons.push('단수를 쳐서 상대가 받게 만드는 자리예요(선수).');
+  if (!reasons.length && explainEarly(state) && (bf.line === 3 || bf.line === 4)) { tags.push(!f.pass && f.line <= 2 ? 'opening' : 'big'); reasons.push('초반의 큰 자리(' + bf.line + '선)예요.'); }
+  if (!reasons.length && bf.lonely) { tags.push('big'); reasons.push('아직 넓게 비어 있는 큰 자리예요.'); }
+  if (!reasons.length) { tags.push('general'); reasons.push('형세를 읽어 보면 이쪽이 약 ' + Math.max(1, Math.round(loss)) + '집 더 좋아요.'); }
+  out.better = { move: best.move, coord: coord(best.move), reasons };
+
+  out.tags = [...new Set(tags)];
+  const main = COACH_PRIORITY.find((t) => out.tags.includes(t)) || 'general';
+  out.tip = COACH_TOPICS[main].tip;
+  out.lesson = { id: COACH_TOPICS[main].lesson, title: lessonName(COACH_TOPICS[main].lesson) };
+  const lossText = out.loss >= 1 ? ' 약 ' + Math.round(out.loss) + '집 손해예요.' : '';
+  out.headline = out.gradeText + '예요.' + lossText;
+  return out;
+}
+
+// 내가 둔 수를 지도한다: ① 지금 판을 읽어 엔진의 수를 찾고 ② 내 수와 엔진의 수를 둔 뒤의 판을 같은 만큼 따로 읽어 견준다.
+// 같은 만큼 읽어야 "많이 읽은 수가 더 좋아 보이는" 치우침이 줄어든다.
+async function coachEvaluate(state, move, options = {}) {
+  const playouts = options.playouts ?? 2500;
+  // 내 수를 일부러 더 읽지 않는다(그러면 내 수가 가장 많이 읽은 수처럼 보인다). 엔진이 스스로 고른 수와 견준다.
+  const report = options.report || await analyzePositionAsync(state, {
+    playouts, timeMs: options.timeMs ?? 1500, seed: options.seed,
+  });
+  const engineTop = report.moves[0];
+  const mineInfo = moveInfo(report, move);
+  const engine = engineTop && engineTop.move !== move ? engineTop : null;
+  // 내 수가 엔진이 가장 많이 읽은 수면 따로 견주지 않는다
+  if (!engine) {
+    const lead = mineInfo ? mineInfo.lead : report.lead;
+    const note = coachMove(state, move, report, { bestMove: move, mineLead: lead, bestLead: lead, mineOwn: mineInfo ? mineInfo.ownership : report.ownership, bestOwn: report.ownership, error: 0 });
+    note.leadAfter = lead;
+    return { report, note };
+  }
+  const after = (m) => (m < 0 ? pass(state) : play(state, m).state);
+  const sub = { playouts: options.subPlayouts ?? Math.round(playouts * 0.6), timeMs: options.subTimeMs ?? 900, seed: options.seed };
+  const rm = await analyzePositionAsync(after(move), sub);
+  const rb = await analyzePositionAsync(after(engine.move), sub);
+  const cmp = {
+    bestMove: engine.move,
+    mineLead: -rm.lead,
+    bestLead: -rb.lead,
+    mineOwn: rm.ownership,
+    bestOwn: rb.ownership,
+    error: Math.sqrt(rm.leadError ** 2 + rb.leadError ** 2),
+  };
+  const note = coachMove(state, move, report, cmp);
+  note.leadAfter = cmp.mineLead;
+  if (options.debug) note.debug = { raw: cmp.bestLead - cmp.mineLead, error: cmp.error };
+  return { report, note, cmp };
+}
+
+// 힌트: 지금 둘 만한 곳 몇 개와 짧은 이름
+function coachHints(state, report, count = 3) {
+  return bestMoves(report, count).map((m, i) => ({
+    move: m.move,
+    letter: 'ABC'[i] || String(i + 1),
+    coord: m.move < 0 ? '쉬기' : toCoord(state.size, m.move),
+    label: moveLabel(state, m.move, report),
+    lead: Math.round(m.lead * 10) / 10,
+  }));
+}
+
+// 복기 요약: 수마다 만든 coachMove 결과 목록으로 잘한 점, 고칠 점, 다시 볼 차시를 정리한다.
+// items: [{ moveNumber, color, note: coachMove(...) }]
+function summarizeReview(items) {
+  const counts = {};
+  let total = 0;
+  const grades = { best: 0, good: 0, ok: 0, inacc: 0, mistake: 0 };
+  for (const it of items) {
+    grades[it.note.grade]++;
+    total += it.note.loss;
+    if (it.note.grade === 'inacc' || it.note.grade === 'mistake') {
+      for (const t of it.note.tags) if (t !== 'general') counts[t] = (counts[t] || 0) + 1;
+    }
+  }
+  const worst = items
+    .filter((it) => it.note.grade === 'inacc' || it.note.grade === 'mistake')
+    .sort((a, b) => b.note.loss - a.note.loss)
+    .slice(0, 3);
+  const habits = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([tag, n]) => ({ tag, count: n, name: COACH_TOPICS[tag].name, tip: COACH_TOPICS[tag].tip, lesson: { id: COACH_TOPICS[tag].lesson, title: lessonName(COACH_TOPICS[tag].lesson) } }));
+  const goodCount = grades.best + grades.good;
+  const praise = items.filter((it) => it.note.good.length && (it.note.grade === 'best' || it.note.grade === 'good')).slice(0, 3);
+  const n = items.length || 1;
+  const goal = habits.length
+    ? '다음 판 목표: ' + habits[0].tip
+    : '다음 판 목표: 지금처럼 두되, 두기 전에 단수와 따낼 돌을 한 번 더 살펴봐요.';
+  return {
+    moves: items.length,
+    grades,
+    goodRate: Math.round((goodCount / n) * 100),
+    totalLoss: Math.round(total),
+    worst,
+    habits,
+    praise,
+    goal,
+  };
+}
+
+// 한 판 복기: 수순(states: 처음 판부터 매 수 뒤의 판)에서 colors 쪽이 둔 수를 하나씩 읽는다.
+// options: colors([BLACK] 등), playouts(수마다), timeMs(수마다 최대), onProgress(done, total), signal({ cancelled })
+async function reviewGame(states, options = {}) {
+  const colors = options.colors || [BLACK, opponent(BLACK)];
+  const jobs = [];
+  for (let i = 0; i + 1 < states.length; i++) {
+    const s = states[i];
+    const n = states[i + 1];
+    if (!colors.includes(s.turn) || s.passes >= 2) continue;
+    const passed = n.passes > s.passes;
+    const move = passed ? -1 : n.lastMove;
+    // 끝내기에서 둘 다 쉬는 수는 복기하지 않는다
+    if (passed && n.passes >= 2) continue;
+    jobs.push({ index: i, move, state: s });
+  }
+  const items = [];
+  for (let k = 0; k < jobs.length; k++) {
+    if (options.signal && options.signal.cancelled) break;
+    const job = jobs[k];
+    const { report, note } = await coachEvaluate(job.state, job.move, {
+      playouts: options.playouts ?? 2500,
+      timeMs: options.timeMs ?? 1200,
+      subTimeMs: options.subTimeMs,
+      debug: options.debug,
+      seed: options.seed !== undefined ? options.seed + k : undefined,
+    });
+    items.push({ index: job.index, moveNumber: job.state.moveNumber + 1, color: job.state.turn, move: job.move, note, lead: report.lead });
+    if (options.onProgress) options.onProgress(k + 1, jobs.length);
+  }
+  return { items, summary: summarizeReview(items) };
+}
 // ---- src/lesson-engine.mjs ----
 // 수업 엔진: 차시 자료의 판 그림을 읽고, 문제의 정답을 규칙 엔진으로 계산한다.
 // 화면 코드와 테스트(정답 자동 검산)가 같은 함수를 쓴다.
@@ -3243,7 +4297,7 @@ function memoryStorage() {
 // 기기 설정(소리, 진동, 화면 밝기)과 "새로 생긴 것" 안내. 프로필과 상관없이 기기마다 하나.
 // storage 는 getItem/setItem 을 가진 객체. 저장이 막혀 있으면 기본값으로 동작한다.
 
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.2.0';
 const SETTINGS_KEY = 'baduk-guide:settings';
 const THEMES = ['auto', 'dark', 'light'];
 
@@ -3252,10 +4306,13 @@ const DEFAULT_SETTINGS = Object.freeze({
   vibrate: true,
   theme: 'dark', // 기본은 "달밤 대국실"
   seen: '', // "새로 생긴 것"을 마지막으로 보여 준 판
+  coach: true, // 9줄 대국의 지도 모드 (둘 때마다 선생님이 한 마디)
 });
 
 // 판마다 새로 생긴 것. 마지막으로 본 판보다 새 판의 항목만 한 번 보여 준다.
 const WHATS_NEW = [
+  { v: '1.2.0', title: '지도 모드', text: '9줄 대국에서 지도 모드를 켜면 내가 둘 때마다 선생님이 좋은 수인지, 더 나은 곳은 어디인지, 전문가는 어떻게 생각하는지 알려 줘요. 힌트 버튼으로 둘 만한 곳 세 개도 볼 수 있어요.' },
+  { v: '1.2.0', title: '선생님과 복기하기', text: '대국이 끝나면 내가 둔 수를 하나씩 다시 읽어서, 가장 아쉬웠던 장면, 고칠 습관, 다시 볼 차시, 다음 판 목표를 정리해 줘요.' },
   { v: '1.1.1', title: '소리 들어 보기, 더 잘 보이는 좌표', text: '설정에서 돌 소리를 미리 들어 볼 수 있어요. 바둑판 좌표 글자를 더 진하고 크게 했어요.' },
   { v: '1.1.0', title: '돌 소리와 진동', text: '돌을 놓거나 따낼 때 작은 소리가 나요. 설정에서 끌 수 있어요.' },
   { v: '1.1.0', title: '틀린 문제 다시 풀기', text: '틀리거나 힌트를 본 문제를 모아 두었다가 다시 풀 수 있어요. 한 번에 맞히면 목록에서 빠져요.' },
@@ -3272,6 +4329,7 @@ function cleanSettings(s) {
   if (typeof s.vibrate === 'boolean') out.vibrate = s.vibrate;
   if (THEMES.includes(s.theme)) out.theme = s.theme;
   if (typeof s.seen === 'string' && s.seen.length <= 20) out.seen = s.seen;
+  if (typeof s.coach === 'boolean') out.coach = s.coach;
   return out;
 }
 
@@ -3746,8 +4804,8 @@ function createBoardView(svg, onTap) {
 }
 
 // ---- src/ui/app.js ----
-// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국, 연습판, 용어 사전, 프로필.
-// 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
+// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국(지도 모드, 복기), 연습판, 용어 사전, 프로필.
+// 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, coach.mjs, coach-explain.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
 
 const root = document.getElementById('app');
 const PRACTICE_KEY = 'baduk-guide:v1:practice';
@@ -4813,58 +5871,148 @@ function viewCount() {
   draw();
 }
 
-// ---------------------------------------------------------------- 9줄 대국 (5단원 미션)
+// ---------------------------------------------------------------- 9줄 대국 (5단원 미션) + 지도 모드 + 복기
+
+// 지도 한 마디를 카드로 그린다 (대국 중 지도와 복기가 함께 쓴다)
+function coachNoteHtml(n) {
+  const bad = n.grade === 'inacc' || n.grade === 'mistake';
+  let h = '<div class="coach-head"><span class="grade g-' + n.grade + '">' + esc(COACH_GRADES[n.grade].short) + '</span><strong>' + esc(n.headline) + '</strong></div>';
+  if (n.good.length) h += '<ul class="coach-list good">' + n.good.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+  if (n.why.length) h += '<ul class="coach-list why">' + n.why.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+  if (n.better && !n.better.equal && n.better.reasons.length) {
+    h += '<p class="coach-better"><span class="ring-ico" aria-hidden="true"></span><span><b>더 나은 곳 ' + esc(n.better.coord) + '</b> ' + esc(n.better.reasons.join(' ')) + '</span></p>';
+  } else if (n.better && n.better.equal) {
+    h += '<p class="coach-better soft"><span class="ring-ico" aria-hidden="true"></span><span>' + esc(n.better.coord) + '도 비슷하게 좋은 자리예요.</span></p>';
+  }
+  if (n.tip && bad) h += '<p class="coach-tip"><b>전문가는 이렇게 생각해요</b>' + esc(n.tip) + '</p>';
+  if (n.lesson && n.lesson.id && bad) {
+    const lesson = lessonById(n.lesson.id);
+    const open = lesson && store.current() && isUnlocked(lesson);
+    h += '<p class="coach-lesson">다시 보기: ' + (open
+      ? '<a href="#/lesson/' + lesson.id + '">' + lesson.no + '차시 ' + esc(lesson.title) + '</a>'
+      : esc((lesson ? lesson.no + '차시 ' : '') + n.lesson.title)) + '</p>';
+  }
+  if (typeof n.leadAfter === 'number') {
+    const v = Math.round(n.leadAfter);
+    h += '<p class="coach-lead">지금 형세(어림): ' + (v === 0 ? '비슷해요' : (v > 0 ? '약 ' + v + '집 앞서요' : '약 ' + -v + '집 뒤져요')) + '</p>';
+  }
+  return h;
+}
 
 function viewGame() {
   const mission = missionOfUnit(5);
   let mode = 'ai';
   let moves = [createGame(9)];
-  let phase = 'play'; // play | score | done
+  let phase = 'play'; // play | score | done | review
   let dead = new Set();
   let timer = null;
+  let busy = false; // 선생님이 읽는 중
+  let job = null; // 읽기를 멈출 때 쓰는 표 { cancelled }
+  let coachOn = settings.coach !== false;
+  let note = null; // 마지막 지도 한 마디
+  let hints = null; // 힌트 자리 [{ move, letter, coord, label }]
+  let review = null; // { items, summary, pos } pos -1 은 요약
+  let reviewProgress = null; // { done, total }
 
   root.innerHTML =
     barHtml('5단원 미션', '9줄 대국') +
     '<div class="seg" role="group" aria-label="상대 고르기"><button type="button" data-mode="ai" aria-pressed="true">돌돌이와 두기</button><button type="button" data-mode="two" aria-pressed="false">둘이서 두기</button></div>' +
+    '<div class="coach-toggle"><button type="button" class="switch" id="coachBtn" role="switch" aria-checked="false"><span class="knob" aria-hidden="true"></span><span>지도 모드</span></button>' +
+    '<span class="coach-sub" id="coachSub"></span></div>' +
     '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
     '<div class="caps"><span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span><span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span></div></section>' +
     '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
     '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
-    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="reset">새 판</button></div></div>' +
-    '<section class="glass result" id="result" hidden></section>';
+    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="hintBtn">힌트</button><button type="button" id="reset">새 판</button></div></div>' +
+    '<section class="glass coach-card" id="coachCard" hidden aria-live="polite"></section>' +
+    '<section class="glass result" id="result" hidden></section>' +
+    '<section class="glass review" id="reviewBox" hidden></section>';
 
   const view = createBoardView($('board'), onTap);
   const cur = () => moves[moves.length - 1];
-  const thinking = () => timer !== null;
-  leaveView = () => { if (timer) clearTimeout(timer); timer = null; };
+  const thinking = () => timer !== null || busy;
+  const stopJob = () => { if (job) job.cancelled = true; job = null; busy = false; };
+  leaveView = () => { if (timer) clearTimeout(timer); timer = null; stopJob(); };
+
+  function boardModel() {
+    if (phase === 'review' && review && review.pos >= 0) {
+      const it = review.items[review.pos];
+      const marks = [];
+      const bad = it.note.grade === 'inacc' || it.note.grade === 'mistake';
+      if (it.move >= 0) marks.push({ at: it.move, shape: bad ? 'miss' : 'found' });
+      if (it.note.better && it.note.better.move >= 0 && it.note.better.move !== it.move) marks.push({ at: it.note.better.move, shape: 'ring' });
+      return { state: moves[it.index], marks, showLast: true };
+    }
+    if (phase === 'review') return { state: cur(), showLast: false };
+    const state = cur();
+    const playing = phase === 'play';
+    const result = playing ? null : score(state, [...dead]);
+    const marks = playing ? [] : deadMarks(dead);
+    const labels = [];
+    if (playing && note && note.better && !note.better.equal && note.better.move >= 0 && state.board[note.better.move] === EMPTY) {
+      marks.push({ at: note.better.move, shape: 'ring' });
+    }
+    if (playing && hints) for (const h of hints) if (h.move >= 0 && state.board[h.move] === EMPTY) labels.push({ at: h.move, text: h.letter });
+    return { state, atari: playing, owner: result ? result.owner : null, marks, labels, ghost: playing && !thinking() };
+  }
+
+  function drawCoachCard() {
+    const card = $('coachCard');
+    if (phase !== 'play') { card.hidden = true; return; }
+    if (busy && !hints) {
+      card.hidden = false;
+      card.innerHTML = '<div class="coach-head"><span class="grade g-wait">생각 중</span><strong>선생님이 수를 읽고 있어요…</strong></div>';
+      return;
+    }
+    if (hints) {
+      card.hidden = false;
+      card.innerHTML = '<div class="coach-head"><span class="grade g-hint">힌트</span><strong>선생님이라면 이 중에서 골라요</strong></div>' +
+        (hints.length ? '<ul class="hint-list">' + hints.map((h) => '<li><span class="hint-letter">' + esc(h.letter) + '</span><b>' + esc(h.coord) + '</b> ' + esc(h.label) + '</li>').join('') + '</ul>'
+          : '<p>둘 만한 곳이 거의 없어요. 한 수 쉬어도 돼요.</p>') +
+        '<p class="coach-tip"><b>전문가는 이렇게 찾아요</b>① 내 돌이 단수인가 ② 따낼 상대 돌이 있나 ③ 약한 돌(내 것, 상대 것)이 있나 ④ 가장 넓게 빈 곳은 어디인가. 이 차례로 살펴보고 골라요.</p>';
+      return;
+    }
+    if (note) {
+      card.hidden = false;
+      const who = mode === 'two' ? colorName(note.color) + ' ' : '';
+      card.innerHTML = '<p class="coach-for">' + esc(who + note.moveNumber + '수째 ' + note.coord) + '</p>' + coachNoteHtml(note) +
+        ((note.grade === 'inacc' || note.grade === 'mistake') && phase === 'play'
+          ? '<div class="coach-actions"><button type="button" class="ghost-btn" id="retryBtn">물러서 다시 두기</button></div>' : '') +
+        '<p class="coach-foot">컴퓨터 선생님의 어림이라 가끔 틀릴 수 있어요.</p>';
+      const rb = $('retryBtn');
+      if (rb) rb.addEventListener('click', retry);
+      return;
+    }
+    card.hidden = true;
+  }
 
   function draw() {
     const state = cur();
     const playing = phase === 'play';
-    const result = playing ? null : score(state, [...dead]);
-    view.draw({
-      state,
-      atari: playing,
-      owner: result ? result.owner : null,
-      marks: playing ? [] : deadMarks(dead),
-      ghost: playing && !thinking(),
-    });
+    view.draw(boardModel());
     $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
     const who = mode === 'ai' ? (state.turn === BLACK ? '내 차례 (흑)' : '돌돌이 차례 (백)') : colorName(state.turn) + ' 차례';
-    $('turnText').textContent = playing ? who : phase === 'score' ? '집 세는 중' : '대국 끝';
+    $('turnText').textContent = playing ? who : phase === 'score' ? '집 세는 중' : phase === 'review' ? '복기 중' : '대국 끝';
     $('capB').textContent = state.captures[BLACK];
     $('capW').textContent = state.captures[WHITE];
     $('undo').disabled = !playing || moves.length <= 1 || thinking();
     $('passBtn').disabled = !playing || thinking();
+    $('hintBtn').disabled = !playing || thinking() || (mode === 'ai' && state.turn !== BLACK);
+    $('reset').disabled = phase === 'review' && busy;
     document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    $('coachBtn').setAttribute('aria-checked', String(coachOn));
+    $('coachSub').textContent = coachOn ? '둘 때마다 선생님이 한 마디 해 줘요' : '꺼 두면 대국이 끝난 뒤 복기만 해요';
+    drawCoachCard();
 
     const box = $('result');
-    box.hidden = playing;
-    if (!playing) {
+    box.hidden = playing || phase === 'review';
+    if (!playing && phase !== 'review') {
+      const result = score(state, [...dead]);
       box.innerHTML = '<h2>' + (phase === 'done' ? '결과' : '집 세기') + '</h2>' + scoreTable(result) +
         (phase === 'score'
           ? '<p class="note">가위표가 붙은 돌은 죽은 돌로 골라 본 거예요. 다르면 돌을 눌러서 고쳐요.</p><div class="finish-actions"><button type="button" class="primary" id="confirmScore">이대로 집 세기 끝</button></div>'
-          : '<div class="finish-actions"><button type="button" class="primary" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>');
+          : '<div class="finish-actions"><button type="button" class="primary" id="reviewBtn">선생님과 복기하기</button><button type="button" class="ghost-btn" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>' +
+            '<p class="note">복기: 내가 둔 수를 하나씩 다시 읽어서 아쉬웠던 장면과 고칠 습관을 알려 줘요.</p>');
       const c = $('confirmScore');
       if (c) c.addEventListener('click', () => {
         phase = 'done';
@@ -4877,11 +6025,151 @@ function viewGame() {
       });
       const a = $('again');
       if (a) a.addEventListener('click', newGame);
+      const rv = $('reviewBtn');
+      if (rv) rv.addEventListener('click', startReview);
     }
+    drawReview();
+  }
+
+  // ---- 복기 ----
+  function drawReview() {
+    const box = $('reviewBox');
+    box.hidden = phase !== 'review';
+    if (phase !== 'review') return;
+    if (!review) {
+      const p = reviewProgress || { done: 0, total: 0 };
+      const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+      box.innerHTML = '<h2>복기 준비 중</h2><p>내가 둔 수를 하나씩 다시 읽고 있어요. ' + (p.total ? p.done + ' / ' + p.total + '수' : '') + '</p>' +
+        '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="finish-actions"><button type="button" class="ghost-btn" id="reviewStop">그만 보기</button></div>';
+      $('reviewStop').addEventListener('click', endReview);
+      return;
+    }
+    const { items, summary } = review;
+    const dots = '<div class="timeline" role="group" aria-label="수마다 평가">' + items.map((it, i) =>
+      '<button type="button" class="tdot g-' + it.note.grade + (i === review.pos ? ' now' : '') + '" data-pos="' + i + '" aria-label="' + it.moveNumber + '수째 ' + esc(COACH_GRADES[it.note.grade].short) + '"></button>').join('') + '</div>';
+    const nav = '<div class="review-nav"><button type="button" id="rvPrev" aria-label="이전 수"' + (review.pos <= -1 ? ' disabled' : '') + '>◀ 이전</button>' +
+      '<button type="button" id="rvSum"' + (review.pos === -1 ? ' aria-pressed="true"' : '') + '>요약</button>' +
+      '<button type="button" id="rvNext" aria-label="다음 수"' + (review.pos >= items.length - 1 ? ' disabled' : '') + '>다음 ▶</button></div>';
+    let body;
+    if (review.pos === -1) {
+      const g = summary.grades;
+      body = '<h2>복기 요약</h2>' +
+        (items.length === 0 ? '<p>복기할 수가 없어요.</p>' :
+          '<p class="rv-score">좋은 수 비율 <b>' + summary.goodRate + '%</b> · 내 수 ' + summary.moves + '개</p>' +
+          '<div class="grade-row"><span class="grade g-best">최선 ' + g.best + '</span><span class="grade g-good">좋음 ' + g.good + '</span><span class="grade g-ok">보통 ' + g.ok + '</span><span class="grade g-inacc">아쉬움 ' + g.inacc + '</span><span class="grade g-mistake">실수 ' + g.mistake + '</span></div>' +
+          (summary.worst.length ? '<h3>가장 아쉬웠던 장면</h3><ol class="worst">' + summary.worst.map((w) =>
+            '<li><button type="button" class="link-btn" data-pos="' + items.indexOf(w) + '">' + w.moveNumber + '수째 ' + esc(w.note.coord) + '</button> ' + esc(w.note.headline) + '</li>').join('') + '</ol>'
+            : '<p>크게 아쉬운 수가 없었어요. 잘 두었어요!</p>') +
+          (summary.habits.length ? '<h3>고칠 습관</h3><ul class="habits">' + summary.habits.map((hb) => {
+            const lesson = lessonById(hb.lesson.id);
+            const open = lesson && store.current() && isUnlocked(lesson);
+            return '<li><b>' + esc(hb.name) + ' ' + hb.count + '번</b><span>' + esc(hb.tip) + '</span>' +
+              (lesson ? '<span class="coach-lesson">다시 보기: ' + (open ? '<a href="#/lesson/' + lesson.id + '">' + lesson.no + '차시 ' + esc(lesson.title) + '</a>' : lesson.no + '차시 ' + esc(lesson.title)) + '</span>' : '') + '</li>';
+          }).join('') + '</ul>' : '') +
+          (summary.praise.length ? '<h3>잘한 점</h3><ul class="coach-list good">' + summary.praise.map((p) =>
+            '<li><button type="button" class="link-btn" data-pos="' + items.indexOf(p) + '">' + p.moveNumber + '수째</button> ' + esc(p.note.good[0]) + '</li>').join('') + '</ul>' : '') +
+          '<p class="coach-tip"><b>' + esc(summary.goal.split(': ')[0]) + '</b>' + esc(summary.goal.split(': ').slice(1).join(': ')) + '</p>' +
+          '<p class="coach-foot">아래 점을 누르거나 ◀ ▶ 로 한 수씩 볼 수 있어요. 빨간 가위표는 내가 둔 곳, 초록 동그라미는 더 나은 곳이에요.</p>');
+    } else {
+      const it = items[review.pos];
+      body = '<p class="coach-for">' + esc((mode === 'two' ? colorName(it.color) + ' ' : '') + it.moveNumber + '수째 ' + it.note.coord) + '</p>' + coachNoteHtml(it.note);
+    }
+    box.innerHTML = nav + dots + '<div class="rv-body">' + body + '</div>' +
+      '<div class="finish-actions"><button type="button" class="ghost-btn" id="reviewEnd">결과로 돌아가기</button></div>';
+    box.querySelectorAll('[data-pos]').forEach((b) => b.addEventListener('click', () => { review.pos = Number(b.dataset.pos); draw(); }));
+    $('rvPrev').addEventListener('click', () => { if (review.pos > -1) { review.pos--; draw(); } });
+    $('rvNext').addEventListener('click', () => { if (review.pos < items.length - 1) { review.pos++; draw(); } });
+    $('rvSum').addEventListener('click', () => { review.pos = -1; draw(); });
+    $('reviewEnd').addEventListener('click', endReview);
+  }
+
+  async function startReview() {
+    stopJob();
+    phase = 'review';
+    review = null;
+    reviewProgress = { done: 0, total: 0 };
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    say('선생님이 복기를 준비하고 있어요. 잠깐만 기다려 주세요.');
+    draw();
+    $('reviewBox').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const colors = mode === 'ai' ? [BLACK] : [BLACK, WHITE];
+    const rev = await reviewGame(moves, {
+      colors, playouts: 2000, timeMs: 900, subTimeMs: 550, signal: my,
+      onProgress: (done, total) => {
+        if (my.cancelled) return;
+        reviewProgress = { done, total };
+        const bar = document.querySelector('#reviewBox .progress');
+        if (bar) drawReview();
+      },
+    });
+    if (my.cancelled) return;
+    job = null;
+    busy = false;
+    review = { ...rev, pos: -1 };
+    say('복기가 준비됐어요. 아쉬웠던 장면부터 살펴봐요.', 'ok');
+    draw();
+  }
+
+  function endReview() {
+    stopJob();
+    phase = 'done';
+    review = null;
+    say('');
+    draw();
+  }
+
+  // ---- 대국 중 지도 ----
+  async function coachAfter(before, move) {
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    note = null;
+    hints = null;
+    draw();
+    const { note: n } = await coachEvaluate(before, move, { playouts: 2500, timeMs: 1300, subTimeMs: 650 });
+    if (my.cancelled) return false;
+    job = null;
+    busy = false;
+    note = { ...n, color: before.turn, moveNumber: before.moveNumber + 1 };
+    return true;
+  }
+
+  async function onHint() {
+    if (phase !== 'play' || thinking()) return;
+    const state = cur();
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    hints = [];
+    note = null;
+    draw();
+    const card = $('coachCard');
+    card.hidden = false;
+    card.innerHTML = '<div class="coach-head"><span class="grade g-wait">생각 중</span><strong>선생님이 둘 만한 곳을 찾고 있어요…</strong></div>';
+    const report = await analyzePositionAsync(state, { playouts: 3000, timeMs: 1500 });
+    if (my.cancelled) return;
+    job = null;
+    busy = false;
+    hints = coachHints(state, report, 3);
+    say('A, B, C 가운데 하나를 골라 보세요. 왜 좋은지 생각해 보는 것이 실력이 늘어요.');
+    draw();
+  }
+
+  function retry() {
+    if (phase !== 'play' || thinking()) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    undoOnce();
+    say('물렀어요. 초록 동그라미 자리도 생각해 보고 다시 두어 보세요.');
+    draw();
   }
 
   function enterScore() {
     phase = 'score';
+    note = null;
+    hints = null;
     dead = new Set(suggestDead(cur()));
     say('두 사람이 연달아 쉬어서 대국이 끝났어요. 이제 집을 세요.', 'ok');
     draw();
@@ -4891,9 +6179,17 @@ function viewGame() {
   function afterMove() {
     if (isOver(cur())) return enterScore();
     if (mode === 'ai' && cur().turn === WHITE) {
-      timer = setTimeout(aiMove, 550);
+      timer = setTimeout(aiMove, note ? 350 : 550);
     }
     draw();
+  }
+
+  async function humanMoved(before, move) {
+    if (coachOn && !isOver(cur())) {
+      const ok = await coachAfter(before, move);
+      if (!ok) return;
+    }
+    afterMove();
   }
 
   function onTap(idx) {
@@ -4903,13 +6199,15 @@ function viewGame() {
       return;
     }
     if (phase !== 'play' || thinking()) return;
+    if (mode === 'ai' && state.turn !== BLACK) return;
     if (state.board[idx] !== EMPTY) return say('빈 자리를 눌러 주세요.');
     const r = play(state, idx);
     if (!r.ok) return say(REASON_TEXT[r.reason], 'warn');
     moves.push(r.state);
+    hints = null;
     const mine = groupsInAtari(r.state).some((g) => g.color === state.turn);
     say(r.captured.length ? colorName(state.turn) + '이 ' + r.captured.length + '점을 따냈어요.' : mine ? '조심해요. ' + (mode === 'ai' ? '내 돌' : colorName(state.turn) + '돌') + '이 단수예요.' : '', r.captured.length ? 'ok' : mine ? 'warn' : '');
-    afterMove();
+    humanMoved(state, idx);
   }
 
   function aiMove() {
@@ -4931,17 +6229,27 @@ function viewGame() {
   function newGame() {
     if (timer) clearTimeout(timer);
     timer = null;
+    stopJob();
     moves = [createGame(9)];
     phase = 'play';
     dead = new Set();
+    note = null;
+    hints = null;
+    review = null;
     say(mode === 'ai' ? '내가 흑이에요. 귀부터 차지해 보세요. 백에게는 덤 6집 반이 있어요.' : '흑부터 번갈아 두어요. 백에게는 덤 6집 반이 있어요.');
     draw();
   }
 
-  $('undo').addEventListener('click', () => {
-    if (phase !== 'play' || moves.length <= 1 || thinking()) return;
+  function undoOnce() {
     moves.pop();
     if (mode === 'ai') while (moves.length > 1 && cur().turn !== BLACK) moves.pop();
+    note = null;
+    hints = null;
+  }
+
+  $('undo').addEventListener('click', () => {
+    if (phase !== 'play' || moves.length <= 1 || thinking()) return;
+    undoOnce();
     say('물렀어요.');
     draw();
   });
@@ -4949,8 +6257,16 @@ function viewGame() {
     if (phase !== 'play' || thinking()) return;
     const state = cur();
     moves.push(pass(state));
+    hints = null;
     say(colorName(state.turn) + '이 한 수 쉬었어요.');
-    afterMove();
+    humanMoved(state, -1);
+  });
+  $('hintBtn').addEventListener('click', onHint);
+  $('coachBtn').addEventListener('click', () => {
+    coachOn = !coachOn;
+    updateSettings({ coach: coachOn });
+    if (!coachOn) { if (busy && !hints && phase === 'play') { /* 지금 읽는 것은 끝까지 둔다 */ } note = null; }
+    draw();
   });
   $('reset').addEventListener('click', () => {
     if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;

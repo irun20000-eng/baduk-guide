@@ -12,6 +12,8 @@ const read = (p) => readFile(path.join(root, p), 'utf8');
 export const SCRIPTS = [
   'src/rules.mjs',
   'src/ai.mjs',
+  'src/coach.mjs',
+  'src/coach-explain.mjs',
   'src/lesson-engine.mjs',
   'src/lessons/tools.mjs',
   'src/lessons/unit2.mjs',

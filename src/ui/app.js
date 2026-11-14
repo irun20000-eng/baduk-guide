@@ -1,5 +1,5 @@
-// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국, 연습판, 용어 사전, 프로필.
-// 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
+// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국(지도 모드, 복기), 연습판, 용어 사전, 프로필.
+// 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, coach.mjs, coach-explain.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
 
 const root = document.getElementById('app');
 const PRACTICE_KEY = 'baduk-guide:v1:practice';
@@ -1065,58 +1065,148 @@ function viewCount() {
   draw();
 }
 
-// ---------------------------------------------------------------- 9줄 대국 (5단원 미션)
+// ---------------------------------------------------------------- 9줄 대국 (5단원 미션) + 지도 모드 + 복기
+
+// 지도 한 마디를 카드로 그린다 (대국 중 지도와 복기가 함께 쓴다)
+function coachNoteHtml(n) {
+  const bad = n.grade === 'inacc' || n.grade === 'mistake';
+  let h = '<div class="coach-head"><span class="grade g-' + n.grade + '">' + esc(COACH_GRADES[n.grade].short) + '</span><strong>' + esc(n.headline) + '</strong></div>';
+  if (n.good.length) h += '<ul class="coach-list good">' + n.good.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+  if (n.why.length) h += '<ul class="coach-list why">' + n.why.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+  if (n.better && !n.better.equal && n.better.reasons.length) {
+    h += '<p class="coach-better"><span class="ring-ico" aria-hidden="true"></span><span><b>더 나은 곳 ' + esc(n.better.coord) + '</b> ' + esc(n.better.reasons.join(' ')) + '</span></p>';
+  } else if (n.better && n.better.equal) {
+    h += '<p class="coach-better soft"><span class="ring-ico" aria-hidden="true"></span><span>' + esc(n.better.coord) + '도 비슷하게 좋은 자리예요.</span></p>';
+  }
+  if (n.tip && bad) h += '<p class="coach-tip"><b>전문가는 이렇게 생각해요</b>' + esc(n.tip) + '</p>';
+  if (n.lesson && n.lesson.id && bad) {
+    const lesson = lessonById(n.lesson.id);
+    const open = lesson && store.current() && isUnlocked(lesson);
+    h += '<p class="coach-lesson">다시 보기: ' + (open
+      ? '<a href="#/lesson/' + lesson.id + '">' + lesson.no + '차시 ' + esc(lesson.title) + '</a>'
+      : esc((lesson ? lesson.no + '차시 ' : '') + n.lesson.title)) + '</p>';
+  }
+  if (typeof n.leadAfter === 'number') {
+    const v = Math.round(n.leadAfter);
+    h += '<p class="coach-lead">지금 형세(어림): ' + (v === 0 ? '비슷해요' : (v > 0 ? '약 ' + v + '집 앞서요' : '약 ' + -v + '집 뒤져요')) + '</p>';
+  }
+  return h;
+}
 
 function viewGame() {
   const mission = missionOfUnit(5);
   let mode = 'ai';
   let moves = [createGame(9)];
-  let phase = 'play'; // play | score | done
+  let phase = 'play'; // play | score | done | review
   let dead = new Set();
   let timer = null;
+  let busy = false; // 선생님이 읽는 중
+  let job = null; // 읽기를 멈출 때 쓰는 표 { cancelled }
+  let coachOn = settings.coach !== false;
+  let note = null; // 마지막 지도 한 마디
+  let hints = null; // 힌트 자리 [{ move, letter, coord, label }]
+  let review = null; // { items, summary, pos } pos -1 은 요약
+  let reviewProgress = null; // { done, total }
 
   root.innerHTML =
     barHtml('5단원 미션', '9줄 대국') +
     '<div class="seg" role="group" aria-label="상대 고르기"><button type="button" data-mode="ai" aria-pressed="true">돌돌이와 두기</button><button type="button" data-mode="two" aria-pressed="false">둘이서 두기</button></div>' +
+    '<div class="coach-toggle"><button type="button" class="switch" id="coachBtn" role="switch" aria-checked="false"><span class="knob" aria-hidden="true"></span><span>지도 모드</span></button>' +
+    '<span class="coach-sub" id="coachSub"></span></div>' +
     '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
     '<div class="caps"><span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span><span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span></div></section>' +
     '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
     '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
-    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="reset">새 판</button></div></div>' +
-    '<section class="glass result" id="result" hidden></section>';
+    '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="hintBtn">힌트</button><button type="button" id="reset">새 판</button></div></div>' +
+    '<section class="glass coach-card" id="coachCard" hidden aria-live="polite"></section>' +
+    '<section class="glass result" id="result" hidden></section>' +
+    '<section class="glass review" id="reviewBox" hidden></section>';
 
   const view = createBoardView($('board'), onTap);
   const cur = () => moves[moves.length - 1];
-  const thinking = () => timer !== null;
-  leaveView = () => { if (timer) clearTimeout(timer); timer = null; };
+  const thinking = () => timer !== null || busy;
+  const stopJob = () => { if (job) job.cancelled = true; job = null; busy = false; };
+  leaveView = () => { if (timer) clearTimeout(timer); timer = null; stopJob(); };
+
+  function boardModel() {
+    if (phase === 'review' && review && review.pos >= 0) {
+      const it = review.items[review.pos];
+      const marks = [];
+      const bad = it.note.grade === 'inacc' || it.note.grade === 'mistake';
+      if (it.move >= 0) marks.push({ at: it.move, shape: bad ? 'miss' : 'found' });
+      if (it.note.better && it.note.better.move >= 0 && it.note.better.move !== it.move) marks.push({ at: it.note.better.move, shape: 'ring' });
+      return { state: moves[it.index], marks, showLast: true };
+    }
+    if (phase === 'review') return { state: cur(), showLast: false };
+    const state = cur();
+    const playing = phase === 'play';
+    const result = playing ? null : score(state, [...dead]);
+    const marks = playing ? [] : deadMarks(dead);
+    const labels = [];
+    if (playing && note && note.better && !note.better.equal && note.better.move >= 0 && state.board[note.better.move] === EMPTY) {
+      marks.push({ at: note.better.move, shape: 'ring' });
+    }
+    if (playing && hints) for (const h of hints) if (h.move >= 0 && state.board[h.move] === EMPTY) labels.push({ at: h.move, text: h.letter });
+    return { state, atari: playing, owner: result ? result.owner : null, marks, labels, ghost: playing && !thinking() };
+  }
+
+  function drawCoachCard() {
+    const card = $('coachCard');
+    if (phase !== 'play') { card.hidden = true; return; }
+    if (busy && !hints) {
+      card.hidden = false;
+      card.innerHTML = '<div class="coach-head"><span class="grade g-wait">생각 중</span><strong>선생님이 수를 읽고 있어요…</strong></div>';
+      return;
+    }
+    if (hints) {
+      card.hidden = false;
+      card.innerHTML = '<div class="coach-head"><span class="grade g-hint">힌트</span><strong>선생님이라면 이 중에서 골라요</strong></div>' +
+        (hints.length ? '<ul class="hint-list">' + hints.map((h) => '<li><span class="hint-letter">' + esc(h.letter) + '</span><b>' + esc(h.coord) + '</b> ' + esc(h.label) + '</li>').join('') + '</ul>'
+          : '<p>둘 만한 곳이 거의 없어요. 한 수 쉬어도 돼요.</p>') +
+        '<p class="coach-tip"><b>전문가는 이렇게 찾아요</b>① 내 돌이 단수인가 ② 따낼 상대 돌이 있나 ③ 약한 돌(내 것, 상대 것)이 있나 ④ 가장 넓게 빈 곳은 어디인가. 이 차례로 살펴보고 골라요.</p>';
+      return;
+    }
+    if (note) {
+      card.hidden = false;
+      const who = mode === 'two' ? colorName(note.color) + ' ' : '';
+      card.innerHTML = '<p class="coach-for">' + esc(who + note.moveNumber + '수째 ' + note.coord) + '</p>' + coachNoteHtml(note) +
+        ((note.grade === 'inacc' || note.grade === 'mistake') && phase === 'play'
+          ? '<div class="coach-actions"><button type="button" class="ghost-btn" id="retryBtn">물러서 다시 두기</button></div>' : '') +
+        '<p class="coach-foot">컴퓨터 선생님의 어림이라 가끔 틀릴 수 있어요.</p>';
+      const rb = $('retryBtn');
+      if (rb) rb.addEventListener('click', retry);
+      return;
+    }
+    card.hidden = true;
+  }
 
   function draw() {
     const state = cur();
     const playing = phase === 'play';
-    const result = playing ? null : score(state, [...dead]);
-    view.draw({
-      state,
-      atari: playing,
-      owner: result ? result.owner : null,
-      marks: playing ? [] : deadMarks(dead),
-      ghost: playing && !thinking(),
-    });
+    view.draw(boardModel());
     $('turnStone').className = 'chip ' + (state.turn === BLACK ? 'black' : 'white');
     const who = mode === 'ai' ? (state.turn === BLACK ? '내 차례 (흑)' : '돌돌이 차례 (백)') : colorName(state.turn) + ' 차례';
-    $('turnText').textContent = playing ? who : phase === 'score' ? '집 세는 중' : '대국 끝';
+    $('turnText').textContent = playing ? who : phase === 'score' ? '집 세는 중' : phase === 'review' ? '복기 중' : '대국 끝';
     $('capB').textContent = state.captures[BLACK];
     $('capW').textContent = state.captures[WHITE];
     $('undo').disabled = !playing || moves.length <= 1 || thinking();
     $('passBtn').disabled = !playing || thinking();
+    $('hintBtn').disabled = !playing || thinking() || (mode === 'ai' && state.turn !== BLACK);
+    $('reset').disabled = phase === 'review' && busy;
     document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    $('coachBtn').setAttribute('aria-checked', String(coachOn));
+    $('coachSub').textContent = coachOn ? '둘 때마다 선생님이 한 마디 해 줘요' : '꺼 두면 대국이 끝난 뒤 복기만 해요';
+    drawCoachCard();
 
     const box = $('result');
-    box.hidden = playing;
-    if (!playing) {
+    box.hidden = playing || phase === 'review';
+    if (!playing && phase !== 'review') {
+      const result = score(state, [...dead]);
       box.innerHTML = '<h2>' + (phase === 'done' ? '결과' : '집 세기') + '</h2>' + scoreTable(result) +
         (phase === 'score'
           ? '<p class="note">가위표가 붙은 돌은 죽은 돌로 골라 본 거예요. 다르면 돌을 눌러서 고쳐요.</p><div class="finish-actions"><button type="button" class="primary" id="confirmScore">이대로 집 세기 끝</button></div>'
-          : '<div class="finish-actions"><button type="button" class="primary" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>');
+          : '<div class="finish-actions"><button type="button" class="primary" id="reviewBtn">선생님과 복기하기</button><button type="button" class="ghost-btn" id="again">한 판 더</button><a class="ghost-btn" href="#/">학습 지도로</a></div>' +
+            '<p class="note">복기: 내가 둔 수를 하나씩 다시 읽어서 아쉬웠던 장면과 고칠 습관을 알려 줘요.</p>');
       const c = $('confirmScore');
       if (c) c.addEventListener('click', () => {
         phase = 'done';
@@ -1129,11 +1219,151 @@ function viewGame() {
       });
       const a = $('again');
       if (a) a.addEventListener('click', newGame);
+      const rv = $('reviewBtn');
+      if (rv) rv.addEventListener('click', startReview);
     }
+    drawReview();
+  }
+
+  // ---- 복기 ----
+  function drawReview() {
+    const box = $('reviewBox');
+    box.hidden = phase !== 'review';
+    if (phase !== 'review') return;
+    if (!review) {
+      const p = reviewProgress || { done: 0, total: 0 };
+      const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+      box.innerHTML = '<h2>복기 준비 중</h2><p>내가 둔 수를 하나씩 다시 읽고 있어요. ' + (p.total ? p.done + ' / ' + p.total + '수' : '') + '</p>' +
+        '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="finish-actions"><button type="button" class="ghost-btn" id="reviewStop">그만 보기</button></div>';
+      $('reviewStop').addEventListener('click', endReview);
+      return;
+    }
+    const { items, summary } = review;
+    const dots = '<div class="timeline" role="group" aria-label="수마다 평가">' + items.map((it, i) =>
+      '<button type="button" class="tdot g-' + it.note.grade + (i === review.pos ? ' now' : '') + '" data-pos="' + i + '" aria-label="' + it.moveNumber + '수째 ' + esc(COACH_GRADES[it.note.grade].short) + '"></button>').join('') + '</div>';
+    const nav = '<div class="review-nav"><button type="button" id="rvPrev" aria-label="이전 수"' + (review.pos <= -1 ? ' disabled' : '') + '>◀ 이전</button>' +
+      '<button type="button" id="rvSum"' + (review.pos === -1 ? ' aria-pressed="true"' : '') + '>요약</button>' +
+      '<button type="button" id="rvNext" aria-label="다음 수"' + (review.pos >= items.length - 1 ? ' disabled' : '') + '>다음 ▶</button></div>';
+    let body;
+    if (review.pos === -1) {
+      const g = summary.grades;
+      body = '<h2>복기 요약</h2>' +
+        (items.length === 0 ? '<p>복기할 수가 없어요.</p>' :
+          '<p class="rv-score">좋은 수 비율 <b>' + summary.goodRate + '%</b> · 내 수 ' + summary.moves + '개</p>' +
+          '<div class="grade-row"><span class="grade g-best">최선 ' + g.best + '</span><span class="grade g-good">좋음 ' + g.good + '</span><span class="grade g-ok">보통 ' + g.ok + '</span><span class="grade g-inacc">아쉬움 ' + g.inacc + '</span><span class="grade g-mistake">실수 ' + g.mistake + '</span></div>' +
+          (summary.worst.length ? '<h3>가장 아쉬웠던 장면</h3><ol class="worst">' + summary.worst.map((w) =>
+            '<li><button type="button" class="link-btn" data-pos="' + items.indexOf(w) + '">' + w.moveNumber + '수째 ' + esc(w.note.coord) + '</button> ' + esc(w.note.headline) + '</li>').join('') + '</ol>'
+            : '<p>크게 아쉬운 수가 없었어요. 잘 두었어요!</p>') +
+          (summary.habits.length ? '<h3>고칠 습관</h3><ul class="habits">' + summary.habits.map((hb) => {
+            const lesson = lessonById(hb.lesson.id);
+            const open = lesson && store.current() && isUnlocked(lesson);
+            return '<li><b>' + esc(hb.name) + ' ' + hb.count + '번</b><span>' + esc(hb.tip) + '</span>' +
+              (lesson ? '<span class="coach-lesson">다시 보기: ' + (open ? '<a href="#/lesson/' + lesson.id + '">' + lesson.no + '차시 ' + esc(lesson.title) + '</a>' : lesson.no + '차시 ' + esc(lesson.title)) + '</span>' : '') + '</li>';
+          }).join('') + '</ul>' : '') +
+          (summary.praise.length ? '<h3>잘한 점</h3><ul class="coach-list good">' + summary.praise.map((p) =>
+            '<li><button type="button" class="link-btn" data-pos="' + items.indexOf(p) + '">' + p.moveNumber + '수째</button> ' + esc(p.note.good[0]) + '</li>').join('') + '</ul>' : '') +
+          '<p class="coach-tip"><b>' + esc(summary.goal.split(': ')[0]) + '</b>' + esc(summary.goal.split(': ').slice(1).join(': ')) + '</p>' +
+          '<p class="coach-foot">아래 점을 누르거나 ◀ ▶ 로 한 수씩 볼 수 있어요. 빨간 가위표는 내가 둔 곳, 초록 동그라미는 더 나은 곳이에요.</p>');
+    } else {
+      const it = items[review.pos];
+      body = '<p class="coach-for">' + esc((mode === 'two' ? colorName(it.color) + ' ' : '') + it.moveNumber + '수째 ' + it.note.coord) + '</p>' + coachNoteHtml(it.note);
+    }
+    box.innerHTML = nav + dots + '<div class="rv-body">' + body + '</div>' +
+      '<div class="finish-actions"><button type="button" class="ghost-btn" id="reviewEnd">결과로 돌아가기</button></div>';
+    box.querySelectorAll('[data-pos]').forEach((b) => b.addEventListener('click', () => { review.pos = Number(b.dataset.pos); draw(); }));
+    $('rvPrev').addEventListener('click', () => { if (review.pos > -1) { review.pos--; draw(); } });
+    $('rvNext').addEventListener('click', () => { if (review.pos < items.length - 1) { review.pos++; draw(); } });
+    $('rvSum').addEventListener('click', () => { review.pos = -1; draw(); });
+    $('reviewEnd').addEventListener('click', endReview);
+  }
+
+  async function startReview() {
+    stopJob();
+    phase = 'review';
+    review = null;
+    reviewProgress = { done: 0, total: 0 };
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    say('선생님이 복기를 준비하고 있어요. 잠깐만 기다려 주세요.');
+    draw();
+    $('reviewBox').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const colors = mode === 'ai' ? [BLACK] : [BLACK, WHITE];
+    const rev = await reviewGame(moves, {
+      colors, playouts: 2000, timeMs: 900, subTimeMs: 550, signal: my,
+      onProgress: (done, total) => {
+        if (my.cancelled) return;
+        reviewProgress = { done, total };
+        const bar = document.querySelector('#reviewBox .progress');
+        if (bar) drawReview();
+      },
+    });
+    if (my.cancelled) return;
+    job = null;
+    busy = false;
+    review = { ...rev, pos: -1 };
+    say('복기가 준비됐어요. 아쉬웠던 장면부터 살펴봐요.', 'ok');
+    draw();
+  }
+
+  function endReview() {
+    stopJob();
+    phase = 'done';
+    review = null;
+    say('');
+    draw();
+  }
+
+  // ---- 대국 중 지도 ----
+  async function coachAfter(before, move) {
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    note = null;
+    hints = null;
+    draw();
+    const { note: n } = await coachEvaluate(before, move, { playouts: 2500, timeMs: 1300, subTimeMs: 650 });
+    if (my.cancelled) return false;
+    job = null;
+    busy = false;
+    note = { ...n, color: before.turn, moveNumber: before.moveNumber + 1 };
+    return true;
+  }
+
+  async function onHint() {
+    if (phase !== 'play' || thinking()) return;
+    const state = cur();
+    const my = { cancelled: false };
+    job = my;
+    busy = true;
+    hints = [];
+    note = null;
+    draw();
+    const card = $('coachCard');
+    card.hidden = false;
+    card.innerHTML = '<div class="coach-head"><span class="grade g-wait">생각 중</span><strong>선생님이 둘 만한 곳을 찾고 있어요…</strong></div>';
+    const report = await analyzePositionAsync(state, { playouts: 3000, timeMs: 1500 });
+    if (my.cancelled) return;
+    job = null;
+    busy = false;
+    hints = coachHints(state, report, 3);
+    say('A, B, C 가운데 하나를 골라 보세요. 왜 좋은지 생각해 보는 것이 실력이 늘어요.');
+    draw();
+  }
+
+  function retry() {
+    if (phase !== 'play' || thinking()) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    undoOnce();
+    say('물렀어요. 초록 동그라미 자리도 생각해 보고 다시 두어 보세요.');
+    draw();
   }
 
   function enterScore() {
     phase = 'score';
+    note = null;
+    hints = null;
     dead = new Set(suggestDead(cur()));
     say('두 사람이 연달아 쉬어서 대국이 끝났어요. 이제 집을 세요.', 'ok');
     draw();
@@ -1143,9 +1373,17 @@ function viewGame() {
   function afterMove() {
     if (isOver(cur())) return enterScore();
     if (mode === 'ai' && cur().turn === WHITE) {
-      timer = setTimeout(aiMove, 550);
+      timer = setTimeout(aiMove, note ? 350 : 550);
     }
     draw();
+  }
+
+  async function humanMoved(before, move) {
+    if (coachOn && !isOver(cur())) {
+      const ok = await coachAfter(before, move);
+      if (!ok) return;
+    }
+    afterMove();
   }
 
   function onTap(idx) {
@@ -1155,13 +1393,15 @@ function viewGame() {
       return;
     }
     if (phase !== 'play' || thinking()) return;
+    if (mode === 'ai' && state.turn !== BLACK) return;
     if (state.board[idx] !== EMPTY) return say('빈 자리를 눌러 주세요.');
     const r = play(state, idx);
     if (!r.ok) return say(REASON_TEXT[r.reason], 'warn');
     moves.push(r.state);
+    hints = null;
     const mine = groupsInAtari(r.state).some((g) => g.color === state.turn);
     say(r.captured.length ? colorName(state.turn) + '이 ' + r.captured.length + '점을 따냈어요.' : mine ? '조심해요. ' + (mode === 'ai' ? '내 돌' : colorName(state.turn) + '돌') + '이 단수예요.' : '', r.captured.length ? 'ok' : mine ? 'warn' : '');
-    afterMove();
+    humanMoved(state, idx);
   }
 
   function aiMove() {
@@ -1183,17 +1423,27 @@ function viewGame() {
   function newGame() {
     if (timer) clearTimeout(timer);
     timer = null;
+    stopJob();
     moves = [createGame(9)];
     phase = 'play';
     dead = new Set();
+    note = null;
+    hints = null;
+    review = null;
     say(mode === 'ai' ? '내가 흑이에요. 귀부터 차지해 보세요. 백에게는 덤 6집 반이 있어요.' : '흑부터 번갈아 두어요. 백에게는 덤 6집 반이 있어요.');
     draw();
   }
 
-  $('undo').addEventListener('click', () => {
-    if (phase !== 'play' || moves.length <= 1 || thinking()) return;
+  function undoOnce() {
     moves.pop();
     if (mode === 'ai') while (moves.length > 1 && cur().turn !== BLACK) moves.pop();
+    note = null;
+    hints = null;
+  }
+
+  $('undo').addEventListener('click', () => {
+    if (phase !== 'play' || moves.length <= 1 || thinking()) return;
+    undoOnce();
     say('물렀어요.');
     draw();
   });
@@ -1201,8 +1451,16 @@ function viewGame() {
     if (phase !== 'play' || thinking()) return;
     const state = cur();
     moves.push(pass(state));
+    hints = null;
     say(colorName(state.turn) + '이 한 수 쉬었어요.');
-    afterMove();
+    humanMoved(state, -1);
+  });
+  $('hintBtn').addEventListener('click', onHint);
+  $('coachBtn').addEventListener('click', () => {
+    coachOn = !coachOn;
+    updateSettings({ coach: coachOn });
+    if (!coachOn) { if (busy && !hints && phase === 'play') { /* 지금 읽는 것은 끝까지 둔다 */ } note = null; }
+    draw();
   });
   $('reset').addEventListener('click', () => {
     if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;

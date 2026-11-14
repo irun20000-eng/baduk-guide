@@ -608,3 +608,67 @@ dialog::backdrop { background: rgba(4, 8, 12, 0.6); }
 :root[data-theme="light"] .boardwrap { box-shadow: 0 10px 24px rgba(60, 40, 10, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.12); }
 :root[data-theme="light"] .node.mission.done .node-dot { background: #6fd6a9; border-color: #1b7a54; }
 :root[data-theme="light"] .segs i.done { background: #1b7a54; }
+/* ---- 지도 모드와 복기 (v1.2) ---- */
+.coach-toggle { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 16px 6px 6px; border-radius: 999px; border: 1px solid var(--stroke-strong); background: var(--tint); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.switch .knob { position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--star-off); transition: background-color 0.2s var(--ease); flex-shrink: 0; }
+.switch .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.2s var(--spring); }
+.switch[aria-checked="true"] .knob { background: var(--jade); }
+.switch[aria-checked="true"] .knob::after { transform: translateX(18px); }
+.coach-sub { font-size: 14px; color: var(--sub); }
+.coach-card, .review { margin-top: 14px; padding: 16px 18px; }
+.coach-card[hidden], .review[hidden] { display: none; }
+.coach-for { margin: 0 0 6px; font-size: 13px; color: var(--sub); }
+.coach-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.coach-head strong { font-size: 17px; }
+.grade { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; background: var(--tint-2); color: var(--ink); }
+.grade.g-best { background: #1e8a5a; color: #fff; }
+.grade.g-good { background: var(--jade-soft); color: var(--jade-text); }
+.grade.g-ok { background: var(--tint-2); color: var(--ink); }
+.grade.g-inacc { background: rgba(243, 196, 79, 0.2); color: var(--gold-text); }
+.grade.g-mistake { background: #d6402f; color: #fff; }
+.grade.g-hint, .grade.g-wait { background: var(--tint-2); color: var(--sub); }
+.coach-list { margin: 10px 0 0; padding-left: 20px; }
+.coach-list li { margin: 3px 0; }
+.coach-list.good li::marker { color: var(--jade-text); }
+.coach-list.why li::marker { color: var(--coral-text); }
+.coach-better { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--jade-soft); }
+.coach-better.soft { background: var(--tint); }
+.coach-better b { color: var(--jade-text); }
+.ring-ico { flex-shrink: 0; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; border: 3px solid #1e8a5a; background: rgba(30, 138, 90, 0.18); }
+.coach-tip { margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--tint); border-left: 4px solid var(--gold); }
+.coach-tip b { display: block; font-size: 13px; color: var(--gold-text); margin-bottom: 2px; }
+.coach-lesson { margin: 8px 0 0; font-size: 15px; }
+.coach-lesson a { color: var(--gold-text); font-weight: 700; }
+.coach-lead { margin: 8px 0 0; font-size: 14px; color: var(--sub); }
+.coach-foot { margin: 10px 0 0; font-size: 12.5px; color: var(--sub); }
+.coach-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.coach-actions .ghost-btn { min-height: 44px; padding: 0 16px; }
+.hint-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.hint-list li { display: flex; align-items: center; gap: 8px; }
+.hint-letter { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #fffdf6; color: #2a2520; font-weight: 800; font-size: 14px; border: 1px solid var(--wood-edge); flex-shrink: 0; }
+.review h2 { font-size: 20px; margin: 8px 0; }
+.review h3 { font-size: 16px; margin: 16px 0 6px; }
+.progress { height: 10px; border-radius: 999px; background: var(--tint-2); overflow: hidden; margin-top: 10px; }
+.progress i { display: block; height: 100%; background: var(--jade); transition: width 0.3s var(--ease); }
+.review-nav { display: flex; gap: 8px; }
+.review-nav button { flex: 1; min-height: 44px; border-radius: 999px; border: 1px solid var(--stroke-strong); background: var(--tint); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.review-nav button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.review-nav button:disabled { opacity: 0.38; cursor: default; }
+.timeline { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0 4px; }
+.tdot { width: 18px; height: 18px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: var(--tint-2); }
+.tdot.g-best { background: #1e8a5a; }
+.tdot.g-good { background: var(--jade); }
+.tdot.g-ok { background: var(--star-off); }
+.tdot.g-inacc { background: var(--gold); }
+.tdot.g-mistake { background: #d6402f; }
+.tdot.now { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rv-score b { font-size: 22px; color: var(--gold-text); }
+.grade-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.worst { margin: 0; padding-left: 22px; }
+.worst li { margin: 6px 0; }
+.habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.habits li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--tint); }
+.habits li span { font-size: 15px; }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--gold-text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
+.rv-body { margin-top: 6px; }

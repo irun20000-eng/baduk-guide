@@ -1,7 +1,7 @@
 // 기기 설정(소리, 진동, 화면 밝기)과 "새로 생긴 것" 안내. 프로필과 상관없이 기기마다 하나.
 // storage 는 getItem/setItem 을 가진 객체. 저장이 막혀 있으면 기본값으로 동작한다.
 
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.2.1';
 export const SETTINGS_KEY = 'baduk-guide:settings';
 export const THEMES = ['auto', 'dark', 'light'];
 
@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
 
 // 판마다 새로 생긴 것. 마지막으로 본 판보다 새 판의 항목만 한 번 보여 준다.
 export const WHATS_NEW = [
+  { v: '1.2.1', title: '큰 판에서 대국', text: '대국에서 9줄, 13줄, 19줄 판을 고를 수 있어요. 지도 모드, 힌트, 복기도 큰 판에서 함께 써요.' },
   { v: '1.2.0', title: '지도 모드', text: '9줄 대국에서 지도 모드를 켜면 내가 둘 때마다 선생님이 좋은 수인지, 더 나은 곳은 어디인지, 전문가는 어떻게 생각하는지 알려 줘요. 힌트 버튼으로 둘 만한 곳 세 개도 볼 수 있어요.' },
   { v: '1.2.0', title: '선생님과 복기하기', text: '대국이 끝나면 내가 둔 수를 하나씩 다시 읽어서, 가장 아쉬웠던 장면, 고칠 습관, 다시 볼 차시, 다음 판 목표를 정리해 줘요.' },
   { v: '1.1.1', title: '소리 들어 보기, 더 잘 보이는 좌표', text: '설정에서 돌 소리를 미리 들어 볼 수 있어요. 바둑판 좌표 글자를 더 진하고 크게 했어요.' },

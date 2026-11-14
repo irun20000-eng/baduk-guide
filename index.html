@@ -689,6 +689,9 @@ dialog::backdrop { background: rgba(4, 8, 12, 0.6); }
 .habits li span { font-size: 15px; }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--gold-text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
 .rv-body { margin-top: 6px; }
+
+.game-sizes { display: flex; margin-bottom: 12px; }
+.game-sizes button { flex: 1; }
 </style>
 </head>
 <body>
@@ -4297,7 +4300,7 @@ function memoryStorage() {
 // 기기 설정(소리, 진동, 화면 밝기)과 "새로 생긴 것" 안내. 프로필과 상관없이 기기마다 하나.
 // storage 는 getItem/setItem 을 가진 객체. 저장이 막혀 있으면 기본값으로 동작한다.
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const SETTINGS_KEY = 'baduk-guide:settings';
 const THEMES = ['auto', 'dark', 'light'];
 
@@ -4311,6 +4314,7 @@ const DEFAULT_SETTINGS = Object.freeze({
 
 // 판마다 새로 생긴 것. 마지막으로 본 판보다 새 판의 항목만 한 번 보여 준다.
 const WHATS_NEW = [
+  { v: '1.2.1', title: '큰 판에서 대국', text: '대국에서 9줄, 13줄, 19줄 판을 고를 수 있어요. 지도 모드, 힌트, 복기도 큰 판에서 함께 써요.' },
   { v: '1.2.0', title: '지도 모드', text: '9줄 대국에서 지도 모드를 켜면 내가 둘 때마다 선생님이 좋은 수인지, 더 나은 곳은 어디인지, 전문가는 어떻게 생각하는지 알려 줘요. 힌트 버튼으로 둘 만한 곳 세 개도 볼 수 있어요.' },
   { v: '1.2.0', title: '선생님과 복기하기', text: '대국이 끝나면 내가 둔 수를 하나씩 다시 읽어서, 가장 아쉬웠던 장면, 고칠 습관, 다시 볼 차시, 다음 판 목표를 정리해 줘요.' },
   { v: '1.1.1', title: '소리 들어 보기, 더 잘 보이는 좌표', text: '설정에서 돌 소리를 미리 들어 볼 수 있어요. 바둑판 좌표 글자를 더 진하고 크게 했어요.' },
@@ -4804,7 +4808,7 @@ function createBoardView(svg, onTap) {
 }
 
 // ---- src/ui/app.js ----
-// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 9줄 대국(지도 모드, 복기), 연습판, 용어 사전, 프로필.
+// 화면: 홈(학습 지도), 차시, 문제 묶음, 따내기 바둑, 집 세기, 대국(9·13·19줄, 지도 모드, 복기), 연습판, 용어 사전, 프로필.
 // 규칙과 판정은 rules.mjs, lesson-engine.mjs, ai.mjs, coach.mjs, coach-explain.mjs, store.mjs 의 함수를 쓴다 (빌드 때 한 스크립트로 합쳐진다).
 
 const root = document.getElementById('app');
@@ -5121,7 +5125,7 @@ function viewHome() {
     hero + stats + review +
     '<h2 class="section-title">학습 지도</h2>' + unitHtml +
     '<h2 class="section-title">자유롭게 두기</h2><div class="play-grid">' +
-    '<a class="glass play-card" href="#/game"><strong>9줄 대국</strong><span>돌돌이와, 또는 둘이서 한 판 두고 집 세기</span></a>' +
+    '<a class="glass play-card" href="#/game"><strong>대국</strong><span>9·13·19줄에서 돌돌이와, 또는 둘이서. 지도 모드와 복기</span></a>' +
     '<a class="glass play-card" href="#/capture"><strong>따내기 바둑</strong><span>먼저 한 점 따내면 이기는 짧은 놀이</span></a>' +
     '<a class="glass play-card" href="#/practice"><strong>연습판</strong><span>9줄, 13줄, 19줄 판에서 마음껏 두기</span></a>' +
     '<a class="glass play-card" href="#/terms"><strong>용어 사전</strong><span>배운 바둑 말을 그림으로 다시 보기</span></a></div>' +
@@ -5871,7 +5875,14 @@ function viewCount() {
   draw();
 }
 
-// ---------------------------------------------------------------- 9줄 대국 (5단원 미션) + 지도 모드 + 복기
+// ---------------------------------------------------------------- 대국 (5단원 미션, 9·13·19줄) + 지도 모드 + 복기
+
+// 판 크기마다 선생님이 읽는 양. 큰 판은 한 수 읽는 데 오래 걸려 시간을 조금 더 주고, 복기는 수가 많아 짧게 읽는다.
+const COACH_BUDGET = {
+  9: { live: 2500, liveMs: 1300, subMs: 650, rev: 2000, revMs: 900, revSubMs: 550 },
+  13: { live: 4000, liveMs: 1800, subMs: 900, rev: 2500, revMs: 800, revSubMs: 450 },
+  19: { live: 6000, liveMs: 2400, subMs: 1100, rev: 3000, revMs: 700, revSubMs: 350 },
+};
 
 // 지도 한 마디를 카드로 그린다 (대국 중 지도와 복기가 함께 쓴다)
 function coachNoteHtml(n) {
@@ -5902,7 +5913,8 @@ function coachNoteHtml(n) {
 function viewGame() {
   const mission = missionOfUnit(5);
   let mode = 'ai';
-  let moves = [createGame(9)];
+  let size = 9;
+  let moves = [createGame(size)];
   let phase = 'play'; // play | score | done | review
   let dead = new Set();
   let timer = null;
@@ -5915,13 +5927,14 @@ function viewGame() {
   let reviewProgress = null; // { done, total }
 
   root.innerHTML =
-    barHtml('5단원 미션', '9줄 대국') +
+    barHtml('5단원 미션', '대국') +
     '<div class="seg" role="group" aria-label="상대 고르기"><button type="button" data-mode="ai" aria-pressed="true">돌돌이와 두기</button><button type="button" data-mode="two" aria-pressed="false">둘이서 두기</button></div>' +
+    '<div class="sizes game-sizes" role="group" aria-label="판 크기"><button type="button" data-size="9">9줄</button><button type="button" data-size="13">13줄</button><button type="button" data-size="19">19줄</button></div>' +
     '<div class="coach-toggle"><button type="button" class="switch" id="coachBtn" role="switch" aria-checked="false"><span class="knob" aria-hidden="true"></span><span>지도 모드</span></button>' +
     '<span class="coach-sub" id="coachSub"></span></div>' +
     '<section class="glass status"><div class="turn"><span id="turnStone" class="chip black"></span><strong id="turnText"></strong></div>' +
     '<div class="caps"><span><span class="chip black small"></span>따낸 돌 <b id="capB">0</b></span><span><span class="chip white small"></span>따낸 돌 <b id="capW">0</b></span></div></section>' +
-    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="9줄 바둑판"></svg></div>' +
+    '<div class="boardwrap"><svg class="board" id="board" role="img" aria-label="바둑판"></svg></div>' +
     '<div class="dock plain" id="dock" data-plain="1"><p class="msg" id="msg" role="status" aria-live="polite"></p>' +
     '<div class="controls"><button type="button" id="undo">무르기</button><button type="button" id="passBtn">한 수 쉬기</button><button type="button" id="hintBtn">힌트</button><button type="button" id="reset">새 판</button></div></div>' +
     '<section class="glass coach-card" id="coachCard" hidden aria-live="polite"></section>' +
@@ -6000,8 +6013,10 @@ function viewGame() {
     $('hintBtn').disabled = !playing || thinking() || (mode === 'ai' && state.turn !== BLACK);
     $('reset').disabled = phase === 'review' && busy;
     document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    document.querySelectorAll('.game-sizes button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.size) === size)));
+    $('board').setAttribute('aria-label', size + '줄 바둑판');
     $('coachBtn').setAttribute('aria-checked', String(coachOn));
-    $('coachSub').textContent = coachOn ? '둘 때마다 선생님이 한 마디 해 줘요' : '꺼 두면 대국이 끝난 뒤 복기만 해요';
+    $('coachSub').textContent = coachOn ? (size === 9 ? '둘 때마다 선생님이 한 마디 해 줘요' : '둘 때마다 한 마디. 큰 판에서는 9줄보다 어림이 거칠어요') : '꺼 두면 대국이 끝난 뒤 복기만 해요';
     drawCoachCard();
 
     const box = $('result');
@@ -6097,7 +6112,7 @@ function viewGame() {
     $('reviewBox').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     const colors = mode === 'ai' ? [BLACK] : [BLACK, WHITE];
     const rev = await reviewGame(moves, {
-      colors, playouts: 2000, timeMs: 900, subTimeMs: 550, signal: my,
+      colors, playouts: COACH_BUDGET[size].rev, timeMs: COACH_BUDGET[size].revMs, subTimeMs: COACH_BUDGET[size].revSubMs, signal: my,
       onProgress: (done, total) => {
         if (my.cancelled) return;
         reviewProgress = { done, total };
@@ -6129,7 +6144,8 @@ function viewGame() {
     note = null;
     hints = null;
     draw();
-    const { note: n } = await coachEvaluate(before, move, { playouts: 2500, timeMs: 1300, subTimeMs: 650 });
+    const b = COACH_BUDGET[size];
+    const { note: n } = await coachEvaluate(before, move, { playouts: b.live, timeMs: b.liveMs, subTimeMs: b.subMs });
     if (my.cancelled) return false;
     job = null;
     busy = false;
@@ -6149,7 +6165,8 @@ function viewGame() {
     const card = $('coachCard');
     card.hidden = false;
     card.innerHTML = '<div class="coach-head"><span class="grade g-wait">생각 중</span><strong>선생님이 둘 만한 곳을 찾고 있어요…</strong></div>';
-    const report = await analyzePositionAsync(state, { playouts: 3000, timeMs: 1500 });
+    const b = COACH_BUDGET[size];
+    const report = await analyzePositionAsync(state, { playouts: Math.round(b.live * 1.2), timeMs: b.liveMs + 200 });
     if (my.cancelled) return;
     job = null;
     busy = false;
@@ -6230,13 +6247,14 @@ function viewGame() {
     if (timer) clearTimeout(timer);
     timer = null;
     stopJob();
-    moves = [createGame(9)];
+    moves = [createGame(size)];
     phase = 'play';
     dead = new Set();
     note = null;
     hints = null;
     review = null;
-    say(mode === 'ai' ? '내가 흑이에요. 귀부터 차지해 보세요. 백에게는 덤 6집 반이 있어요.' : '흑부터 번갈아 두어요. 백에게는 덤 6집 반이 있어요.');
+    const big = size > 9 ? ' ' + size + '줄 판은 한 판이 길어요. 귀, 변, 가운데 순서로 넓게 차지해 보세요.' : '';
+    say((mode === 'ai' ? '내가 흑이에요. 귀부터 차지해 보세요. 백에게는 덤 6집 반이 있어요.' : '흑부터 번갈아 두어요. 백에게는 덤 6집 반이 있어요.') + big);
     draw();
   }
 
@@ -6272,6 +6290,13 @@ function viewGame() {
     if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;
     newGame();
   });
+  document.querySelectorAll('.game-sizes button').forEach((b) => b.addEventListener('click', () => {
+    const next = Number(b.dataset.size);
+    if (next === size) return;
+    if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 ' + next + '줄 판으로 새로 시작할까요?')) return;
+    size = next;
+    newGame();
+  }));
   document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
     if (b.dataset.mode === mode) return;
     if (phase === 'play' && cur().moveNumber > 0 && !confirm('지금 두던 판을 지우고 새로 시작할까요?')) return;

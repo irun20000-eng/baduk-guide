@@ -245,3 +245,18 @@ test('지도: 둘 곳이 많은데 쉬면 쉰 것을 말하고, 1·2선 탓으�
   assert.equal(note.tags.includes('opening'), false);
   assert.ok(note.why.some((t) => /쉬었어요/.test(t)));
 });
+
+test('큰 판(13줄, 19줄)에서도 읽고 지도한다', async () => {
+  for (const size of [13, 19]) {
+    let s = createGame(size);
+    const mid = Math.floor(size / 2);
+    s = play(s, mid * size + mid).state;
+    const r = analyzePosition(s, { playouts: 400, seed: size });
+    assert.equal(r.ownership.length, size * size);
+    assert.ok(r.moves.length > 10);
+    const { note } = await coachEvaluate(s, 0, { playouts: 600, timeMs: 20000, subTimeMs: 20000, seed: 1 });
+    assert.ok(note.grade in { best: 1, good: 1, ok: 1, inacc: 1, mistake: 1 });
+    assert.equal(moveFacts(s, 0).line, 1);
+    assert.equal(typeof note.headline, 'string');
+  }
+});

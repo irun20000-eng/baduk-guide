@@ -171,8 +171,8 @@ test('새로 생긴 것(v1.1.1): 마지막으로 본 판 뒤의 항목만 보여
   assert.equal(compareVersion('1.1.1', '1.1.0') > 0, true);
   assert.equal(compareVersion('1.10.0', '1.9.0') > 0, true);
   assert.equal(compareVersion('1.1.0', '1.1.0'), 0);
-  assert.deepEqual(newsSince('1.1.0').map((n) => n.v), ['1.2.0', '1.2.0', '1.1.1']);
-  assert.deepEqual(newsSince('1.1.1').map((n) => n.v), ['1.2.0', '1.2.0']);
+  assert.deepEqual(newsSince('1.1.0').map((n) => n.v), ['1.2.1', '1.2.0', '1.2.0', '1.1.1']);
+  assert.deepEqual(newsSince('1.1.1').map((n) => n.v), ['1.2.1', '1.2.0', '1.2.0']);
   assert.equal(newsSince('').length, WHATS_NEW.length);
   assert.equal(newsSince(APP_VERSION).length, 0);
   assert.equal(shouldShowNews({ seen: '1.1.0' }, true), true);
